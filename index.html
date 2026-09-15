@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tsinghua SEM Course Planner — Fall 2026</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brandline">
+      <h1>Tsinghua SEM Course Planner</h1>
+      <span class="sub">Fall 2026 · Sep 14, 2026 – Jan 17, 2027</span>
+      <div class="headstat">
+        <b id="hsMain">0 CP</b>
+        <span id="hsSub">booked</span>
+      </div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-panel="week">Week view</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="list">Course list</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="add">Add courses</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="data">Data &amp; sharing</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ============ WEEK VIEW ============ -->
+  <section class="panel active" id="panel-week">
+    <div class="bar">
+      <label class="field">
+        <span>Semester week</span>
+        <select id="weekSel"></select>
+      </label>
+      <div class="field">
+        <span>Show on calendar</span>
+        <div class="filters" id="statusFilters"></div>
+      </div>
+    </div>
+
+    <div id="clashBox"></div>
+
+    <div class="gridwrap">
+      <div class="griddays" id="grid"></div>
+    </div>
+    <p class="hint" style="margin-top:10px">
+      Click a course to edit it. The grey bands are Tsinghua blocks 1–6; courses may run across block boundaries.
+      Pick <strong>“All weeks · combined”</strong> at the top of the week selector to overlay every course at once —
+      useful for spotting the heaviest possible week, even for courses that only run part of the semester.
+    </p>
+  </section>
+
+  <!-- ============ COURSE LIST ============ -->
+  <section class="panel" id="panel-list">
+    <h2>Course list</h2>
+    <p class="lead">Change a status and the week view updates immediately. Setting a course to “Dropped” moves it
+      into the archive below, out of the way but not deleted.</p>
+    <div class="bar">
+      <label class="field">
+        <span>Search</span>
+        <input type="text" id="search" placeholder="Title, instructor, course number">
+      </label>
+      <label class="field">
+        <span>Status</span>
+        <select id="listStatusFilter">
+          <option value="">All</option>
+        </select>
+      </label>
+      <div class="summary" id="summaryRow"></div>
+    </div>
+    <div class="tablewrap courses">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:115px">Status</th>
+            <th>Course</th>
+            <th style="width:100px">Number</th>
+            <th style="width:115px">Instructor</th>
+            <th style="width:170px">Time</th>
+            <th style="width:95px">Weeks</th>
+            <th style="width:65px">Credits</th>
+            <th style="width:150px">Room</th>
+            <th style="width:130px"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <details class="archive" id="archiveDetails">
+      <summary>Dropped courses · archive <span class="cnt">(<span id="archiveCount">0</span>)</span></summary>
+      <div class="archive-body" id="archiveBody"></div>
+    </details>
+  </section>
+
+  <!-- ============ ADD COURSES ============ -->
+  <section class="panel" id="panel-add">
+    <div class="two">
+      <div>
+        <h2>Paste from the course system</h2>
+        <p class="lead">Paste the lines of a course row from the Tsinghua system — stacked or as a table row.
+          Separate several courses with a blank line. The time format
+          <code class="k">2-6(week 1-16)</code> is read as weekday&#8209;block.</p>
+        <div class="form">
+          <textarea id="pasteBox" spellcheck="false" placeholder="Accounting Principles
+会计学原理
+30510123
+1
+3
+School of Economics and Management
+张海燕
+2-6(week 1-16)"></textarea>
+          <div class="formactions">
+            <button class="btn" id="parseBtn">Read courses</button>
+            <button class="btn ghost" id="clearPaste">Clear field</button>
+            <span class="hint">You get a preview before anything is saved.</span>
+          </div>
+          <div class="preview" id="parsePreview"></div>
+        </div>
+      </div>
+
+      <div>
+        <h2 id="formTitle">Add a course manually</h2>
+        <p class="lead">For courses with fixed times instead of a block code — such as the SEM electives from the
+          MBA schedule (8:00–11:25, 13:30–16:55, 19:00–22:00).</p>
+        <div class="form">
+          <input type="hidden" id="fId">
+          <div class="formgrid">
+            <label class="field"><span>Title (English)</span><input type="text" id="fTitleEn"></label>
+            <label class="field"><span>Title (Chinese)</span><input type="text" id="fTitleCn"></label>
+            <label class="field"><span>Course number</span><input type="text" id="fNumber"></label>
+            <label class="field"><span>Sequence</span><input type="text" id="fSeq"></label>
+            <label class="field"><span>Credits</span><input type="number" id="fCredits" step="0.5" min="0"></label>
+            <label class="field"><span>Instructor</span><input type="text" id="fInstructor"></label>
+            <label class="field"><span>Department</span><input type="text" id="fDept"></label>
+            <label class="field"><span>Language</span><input type="text" id="fLang" placeholder="English"></label>
+            <label class="field"><span>Room</span><input type="text" id="fRoom"></label>
+            <label class="field"><span>Weeks</span><input type="text" id="fWeeks" placeholder="1-16 or 1-3,5-8"></label>
+            <label class="field"><span>Status</span><select id="fStatus"></select></label>
+            <label class="field"><span>Note</span><input type="text" id="fNote"></label>
+          </div>
+
+          <div class="slots">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <strong style="font-size:14px">Meetings</strong>
+              <button class="btn ghost small" id="addSlot">Add meeting</button>
+              <label class="field" style="margin-left:auto">
+                <span>Apply block code</span>
+                <span style="display:flex;gap:6px">
+                  <input type="text" id="fCode" placeholder="2-6(week 1-16)">
+                  <button class="btn ghost small" id="applyCode">Apply</button>
+                </span>
+              </label>
+            </div>
+            <div id="slotRows" style="margin-top:12px"></div>
+          </div>
+
+          <div class="formactions">
+            <button class="btn" id="saveCourse">Save course</button>
+            <button class="btn ghost" id="resetForm">Clear form</button>
+            <button class="btn danger" id="deleteCourse" style="display:none">Delete course</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DATA ============ -->
+  <section class="panel" id="panel-data">
+    <h2>Data &amp; sharing</h2>
+    <p class="lead">Courses live in your browser only. The file itself carries no data — export your list as JSON
+      to pass it on, or export to .ics to bring your schedule into another calendar app.</p>
+    <div id="storageNote"></div>
+    <div class="form">
+      <div class="formactions" style="margin-top:0">
+        <button class="btn" id="exportBtn">Export course list (JSON)</button>
+        <button class="btn ghost" id="importBtn">Import course list</button>
+        <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+        <button class="btn" id="icsExportBtn">Export to calendar (.ics)</button>
+        <button class="btn ghost" id="printBtn">Print week view</button>
+        <button class="btn danger" id="resetAll">Reset to starting courses</button>
+      </div>
+      <p class="hint" style="margin-top:14px">
+        Sharing: send this HTML file (it runs offline, just double-click it). To take over your selection as well,
+        the other person imports the exported JSON file.
+      </p>
+      <p class="hint" style="margin-top:6px">
+        Calendar import: the .ics file uses whichever statuses are currently shown on the week view (toggle them
+        there first). On Android, open the downloaded file with the Google Calendar app, or import it into Google
+        Calendar on desktop — it then syncs to your phone automatically.
+      </p>
+    </div>
+
+    <div class="note" style="margin-top:20px">
+      <h3>Tsinghua time blocks</h3>
+      <ul id="blockLegend"></ul>
+    </div>
+  </section>
+</main>
+<div id="toastHost"></div>
+<button class="now-badge" id="nowBadge" type="button" title="Jump to the current week"></button>
+<style media="print">
+  header.top,.tabs,.bar,.hint,.formactions,.now-badge,.archive{display:none !important}
+  .panel{display:none !important}
+  #panel-week{display:block !important}
+  body{background:#fff}
+  main{padding:0}
+  .gridwrap{border:0}
+</style>
+<script src="js/core.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/weekView.js"></script>
+<script src="js/summary.js"></script>
+<script src="js/courseList.js"></script>
+<script src="js/archive.js"></script>
+<script src="js/form.js"></script>
+<script src="js/icsExport.js"></script>
+<script src="js/dataShare.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
