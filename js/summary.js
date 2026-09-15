@@ -25,7 +25,29 @@ function renderCredits(){
       '<span><span class="dot '+s.id+'"></span>'+s.label+' <b>'+t[s.id].cp+' CP</b> ('+t[s.id].n+')</span>'
     ).join("");
   }
+  renderGoal(t);
   renderFilters();
+}
+
+/* Credit-goal mini progress bar in the header */
+function renderGoal(t){
+  const wrap = $("#goalWrap"); if(!wrap) return;
+  t = t || statTotals();
+  const booked = t.booked.cp, pending = t.bid.cp + t.option.cp;
+  const goal = state.goal || 0;
+  const input = $("#goalInput");
+  if(input && document.activeElement !== input) input.value = goal ? goal : "";
+  const bar = $("#goalBar"), cap = $("#goalCap");
+  if(goal > 0){
+    bar.style.display = "";
+    $("#goalBooked").style.width  = Math.min(100, booked/goal*100) + "%";
+    $("#goalPending").style.width = Math.min(100, (booked+pending)/goal*100) + "%";
+    const remaining = Math.max(0, goal - booked);
+    cap.textContent = booked + " / " + goal + " CP" + (remaining > 0 ? " · " + (+remaining.toFixed(1)) + " to go" : " · reached ✓");
+  } else {
+    bar.style.display = "none";
+    cap.textContent = "Credit goal:";
+  }
 }
 
 function renderFilters(){

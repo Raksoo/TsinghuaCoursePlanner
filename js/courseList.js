@@ -4,13 +4,28 @@
    Course list (active courses only — dropped courses live in the
    archive, see archive.js)
    ============================================================ */
+/* Delete straight away, but offer a few seconds to undo (friendlier than a
+   confirm dialog on every click). Keeps the original position for the undo. */
 function deleteCourseWithConfirm(id){
-  const c = state.courses.find(x=>x.id===id);
-  if(!c) return;
-  if(confirm("Delete “"+(c.titleEn||c.titleCn)+"” permanently?")){
-    state.courses = state.courses.filter(x=>x.id!==id);
-    save(); renderAll(); toast("Course deleted");
-  }
+  const idx = state.courses.findIndex(x=>x.id===id);
+  if(idx<0) return;
+  const c = state.courses[idx];
+  state.courses = state.courses.filter(x=>x.id!==id);
+  save(); renderAll();
+  toast("Deleted “"+(c.titleEn||c.titleCn||"course")+"”", "Undo", ()=>{
+    state.courses.splice(Math.min(idx, state.courses.length), 0, c);
+    save(); renderAll(); toast("Deletion undone");
+  });
+}
+
+/* Compact 1–18 week strip: filled cells mark the weeks a course runs. */
+function weekStrip(weeksStr){
+  const active = new Set(parseWeeks(weeksStr));
+  if(!active.size) return null;
+  const strip = el("div","weekstrip");
+  strip.title = "Runs in weeks "+weeksStr;
+  for(let w=1; w<=TOTAL_WEEKS; w++) strip.appendChild(el("span","wk"+(active.has(w)?" on":"")));
+  return strip;
 }
 
 function renderTable(){
@@ -67,7 +82,13 @@ function renderTable(){
     tr.appendChild(el("td","num", c.number + (c.seq? "-"+c.seq : "")));
     tr.appendChild(el("td", null, c.instructor||"—"));
     tr.appendChild(el("td","num", slotText(c)));
-    tr.appendChild(el("td","num", c.weeks||"—"));
+
+    const tdW = el("td","num");
+    tdW.appendChild(el("span","wktext", c.weeks||"—"));
+    const strip = weekStrip(c.weeks);
+    if(strip) tdW.appendChild(strip);
+    tr.appendChild(tdW);
+
     tr.appendChild(el("td","num", (c.credits||0)+""));
     tr.appendChild(el("td", null, c.room||"—"));
 

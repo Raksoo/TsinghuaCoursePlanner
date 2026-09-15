@@ -130,12 +130,16 @@ function openICSModal(){
 
   const host = $("#icsCourseCheckboxes");
   host.innerHTML = "";
-  state.courses.forEach(c=>{
+  const exportable = state.courses.filter(c => c.status !== "out"); // dropped courses are never exported
+  if(!exportable.length){
+    host.appendChild(el("div","ics-empty","No active courses to export — every course is dropped."));
+  }
+  exportable.forEach(c=>{
     const row = el("label","ics-course-row");
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.dataset.id = c.id;
-    cb.checked = c.status !== "out"; // dropped courses default unchecked
+    cb.checked = true;
     row.appendChild(cb);
     row.appendChild(el("span",null, c.titleEn || c.titleCn || "(no title)"));
     row.appendChild(el("span","cn", statusLabel(c.status)));

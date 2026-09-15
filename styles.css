@@ -38,6 +38,16 @@ header.top{background:var(--purple);color:#fff;padding:16px 28px 0}
 .headstat{margin-left:auto;text-align:right;line-height:1.25}
 .headstat b{display:block;font-size:20px;font-weight:650;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
 .headstat span{font-size:12.5px;color:#e0c6e8}
+/* Credit-goal mini progress bar */
+.goalwrap{width:210px;margin-left:auto;margin-top:6px}
+.goalbar{position:relative;height:6px;border-radius:999px;background:rgba(255,255,255,.20);overflow:hidden}
+.goalbar i{position:absolute;left:0;top:0;height:100%;border-radius:999px;transition:width .25s ease}
+.goalbar .gf-pending{background:rgba(255,255,255,.42)}
+.goalbar .gf-booked{background:#8be0b0}
+.goalcap{display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-top:5px;font-size:11.5px;color:#e0c6e8;white-space:nowrap}
+#goalInput{width:46px;min-width:0;padding:2px 5px;font-size:12px;border-radius:6px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;text-align:right}
+#goalInput::placeholder{color:#e0c6e8;opacity:.7}
+#goalInput:focus{outline:2px solid rgba(255,255,255,.55);border-color:transparent}
 .tabs{display:flex;gap:2px;margin-top:14px;flex-wrap:wrap}
 .tab{background:transparent;border:0;color:#e0c6e8;padding:9px 16px;border-radius:8px 8px 0 0;font-size:14px;font-weight:520}
 .tab:hover{background:rgba(255,255,255,.12);color:#fff}
@@ -156,6 +166,9 @@ tbody tr.dim td{color:var(--muted)}
 .tablewrap.courses tbody tr:hover,
 .archive-body tbody tr:hover{background:var(--purple-soft)}
 td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.weekstrip{display:flex;gap:1px;margin-top:5px;max-width:160px}
+.weekstrip .wk{flex:1;height:5px;border-radius:1px;background:var(--line-strong);opacity:.4}
+.weekstrip .wk.on{background:var(--purple-mid);opacity:1}
 td .cn{color:var(--muted);font-size:12.5px;display:block}
 td .title{font-weight:600}
 select.statussel{padding:4px 6px;min-width:auto;font-size:12.5px;border-radius:6px;font-weight:560}
@@ -182,9 +195,48 @@ select.statussel.out{background:var(--s-out-bg);border-color:var(--s-out);color:
 /* ---------- Form ---------- */
 .form{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
 .formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
-.formgrid .field input,.formgrid .field select{width:100%;min-width:0}
-.slots{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
-.slotrow{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+.formgrid .field input,.formgrid .field select,.formgrid .field textarea{width:100%;min-width:0}
+
+/* Add/edit form: numbered sections for a clear top-to-bottom flow */
+.fsection{border-top:1px solid var(--line);margin-top:20px;padding-top:18px}
+.fsection:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.fsection-title{display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:640;margin-bottom:14px}
+.fsection-title .step{
+  display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;
+  background:var(--purple);color:#fff;border-radius:50%;font-size:12.5px;font-weight:700;
+}
+.field .opt{font-style:normal;font-weight:400;font-size:11px;color:var(--muted);margin-left:5px}
+.req{font-style:normal;color:var(--danger);font-weight:800;margin-left:2px}
+.fsection-title .req{font-size:15px}
+.field-required input,.field-required select{background:#fff9f2;border-color:#e6c9a8}
+.field-required input:focus{border-color:var(--purple-mid);background:#fff}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);border:0}
+
+/* 4-column details grid with explicit spans (collapses on narrow screens) */
+.formgrid-main{grid-template-columns:repeat(4,minmax(0,1fr))}
+.formgrid-main .span-2{grid-column:span 2}
+.formgrid-main .span-full{grid-column:1 / -1}
+@media(max-width:760px){ .formgrid-main{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media(max-width:440px){ .formgrid-main{grid-template-columns:1fr} .formgrid-main .span-2{grid-column:auto} }
+
+/* Meeting rows: weekday + class block are primary; custom time only when needed */
+.slotrow{
+  display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;
+  padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fbf9fc;margin-bottom:10px;
+}
+.slotrow .field{min-width:0}
+.slotrow select,.slotrow input{width:100%}
+.slotrow .field-day{flex:0 0 140px}
+.slotrow .field-block{flex:1 1 220px}
+.slotrow .field-time{flex:1 1 210px}
+.slotrow .field-time[hidden]{display:none}
+.time-wrap{display:flex;align-items:center;gap:7px}
+.time-wrap input{min-width:0}
+.time-dash{color:var(--muted)}
+.slot-remove{margin-left:auto;align-self:flex-end}
+.field-weeks{margin-top:16px;max-width:340px}
+.fieldhint{font-size:11.5px;color:var(--muted);font-weight:400;margin-top:3px}
+textarea.note-area{min-height:70px;font-family:inherit;font-size:14px;line-height:1.5}
 .formactions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center}
 .hint{font-size:12.5px;color:var(--muted)}
 .preview{margin-top:14px}
@@ -192,9 +244,13 @@ select.statussel.out{background:var(--s-out-bg);border-color:var(--s-out);color:
 /* Add / edit header: title + lead on the left, the paste button on the right */
 .add-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
 .add-head .lead{margin-bottom:2px}
-.add-import-btns{display:flex;gap:8px;flex-wrap:wrap;flex:none}
+.add-import-btns{display:flex;gap:8px;flex-wrap:wrap;flex:none;align-items:center}
+.import-hint{flex-basis:100%;font-size:11.5px;font-weight:640;color:var(--purple-mid);margin-bottom:1px}
 .paste-open{white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
 .paste-open span[aria-hidden]{font-size:15px;line-height:1}
+/* Highlighted "preferred" import buttons (accent-soft, not solid — Save stays the primary action) */
+.import-btn{background:var(--purple-soft);border:1.5px solid var(--purple-mid);color:var(--purple);font-weight:640;box-shadow:0 1px 2px rgba(102,8,116,.10)}
+.import-btn:hover{background:#ecd9f1;border-color:var(--purple)}
 @media(max-width:640px){ .add-import-btns{width:100%} .paste-open{flex:1;justify-content:center} }
 
 /* Paste modal: screenshot help + textarea */
@@ -212,7 +268,9 @@ select.statussel.out{background:var(--s-out-bg);border-color:var(--s-out);color:
 
 .hint-block{margin:10px 0 0;padding:8px 11px;background:var(--purple-soft);border-radius:8px}
 code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;box-shadow:0 6px 20px rgba(28,20,36,.25);z-index:50}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;box-shadow:0 6px 20px rgba(28,20,36,.25);z-index:50;display:inline-flex;align-items:center;gap:14px}
+.toast-action{background:transparent;border:1px solid rgba(255,255,255,.42);color:#fff;border-radius:999px;padding:3px 13px;font-size:12.5px;font-weight:640}
+.toast-action:hover{background:rgba(255,255,255,.16)}
 @media (prefers-reduced-motion:no-preference){
   .toast{animation:pop .18s ease-out}
   @keyframes pop{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
@@ -229,6 +287,9 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
   max-height:88vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(28,20,36,.35);
 }
 .modal.modal-wide{max-width:640px}
+.modal.modal-ics{max-width:600px}
+.modal-ics .ics-course-list{max-height:320px}
+.ics-empty{padding:14px;color:var(--muted);font-size:13px;text-align:center}
 .modal h3{margin:0 0 4px;font-size:17px;font-weight:650}
 .modal-section{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .modal-section:first-of-type{border-top:0;margin-top:14px;padding-top:0}
@@ -281,6 +342,8 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
 }
 .now-badge:hover{background:#33283c}
 .now-badge .kw-dot{width:7px;height:7px;border-radius:50%;background:#8be0b0;flex:none}
+.now-badge .kw-date{opacity:.72;font-weight:500}
+.now-badge .kw-date::before{content:"·";margin:0 6px;opacity:.55}
 .now-badge.out-of-range .kw-dot{background:#c8bfd0}
 @media print{.now-badge{display:none !important}}
 

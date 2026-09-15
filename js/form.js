@@ -7,36 +7,53 @@ function addSlotRow(slot){
   const host = $("#slotRows");
   const row = el("div","slotrow");
 
-  const f1 = el("label","field"); f1.appendChild(el("span",null,"Day"));
+  // Weekday
+  const fDay = el("label","field field-day"); fDay.appendChild(el("span",null,"Weekday"));
   const daySel = el("select");
   DAYS.forEach((d,i)=>{ const o = el("option",null,d); o.value = i+1; daySel.appendChild(o); });
   daySel.value = slot && slot.day ? slot.day : 1;
-  f1.appendChild(daySel); row.appendChild(f1);
+  fDay.appendChild(daySel); row.appendChild(fDay);
 
-  const f2 = el("label","field"); f2.appendChild(el("span",null,"From"));
-  const t1 = document.createElement("input"); t1.type = "time"; t1.value = (slot&&slot.start)||"08:00";
-  f2.appendChild(t1); row.appendChild(f2);
-
-  const f3 = el("label","field"); f3.appendChild(el("span",null,"To"));
-  const t2 = document.createElement("input"); t2.type = "time"; t2.value = (slot&&slot.end)||"09:35";
-  f3.appendChild(t2); row.appendChild(f3);
-
-  const f4 = el("label","field"); f4.appendChild(el("span",null,"Block"));
+  // Class block (primary choice)
+  const fBlk = el("label","field field-block"); fBlk.appendChild(el("span",null,"Class block"));
   const bSel = el("select");
-  const o0 = el("option",null,"Custom"); o0.value = ""; bSel.appendChild(o0);
-  BLOCKS.forEach(b=>{ const o = el("option",null,"Block "+b.n+" ("+b.start+"–"+b.end+")"); o.value = b.n; bSel.appendChild(o); });
-  bSel.value = slot && slot.block ? slot.block : "";
-  bSel.addEventListener("change", ()=>{
-    const b = BLOCKS.find(x=>x.n===+bSel.value);
-    if(b){ t1.value = b.start; t2.value = b.end; }
-  });
-  f4.appendChild(bSel); row.appendChild(f4);
+  BLOCKS.forEach(b=>{ const o = el("option",null,"Block "+b.n+"  ·  "+b.start+"–"+b.end); o.value = b.n; bSel.appendChild(o); });
+  const oc = el("option",null,"Custom time…"); oc.value = ""; bSel.appendChild(oc);
+  fBlk.appendChild(bSel); row.appendChild(fBlk);
 
-  const rm = el("button","btn danger small","Remove");
+  // Custom time (secondary — only shown when "Custom time…" is picked)
+  const fTime = el("div","field field-time"); fTime.appendChild(el("span",null,"Custom time"));
+  const wrap = el("div","time-wrap");
+  const t1 = document.createElement("input"); t1.type = "time"; t1.value = (slot&&slot.start)||"08:00";
+  const t2 = document.createElement("input"); t2.type = "time"; t2.value = (slot&&slot.end)||"09:35";
+  wrap.appendChild(t1); wrap.appendChild(el("span","time-dash","–")); wrap.appendChild(t2);
+  fTime.appendChild(wrap); row.appendChild(fTime);
+
+  // Remove
+  const rm = el("button","btn danger small slot-remove","Remove");
   rm.addEventListener("click", ()=>row.remove());
   row.appendChild(rm);
 
-  row._read = () => ({ day:+daySel.value, start:t1.value, end:t2.value, block: bSel.value? +bSel.value : undefined });
+  const syncBlock = () => {
+    const b = BLOCKS.find(x=>x.n===+bSel.value);
+    if(b){ t1.value = b.start; t2.value = b.end; fTime.hidden = true; }
+    else { fTime.hidden = false; }
+  };
+  bSel.addEventListener("change", syncBlock);
+
+  // Initial block: explicit block, else a block whose time matches exactly, else Custom
+  if(slot && slot.block) bSel.value = slot.block;
+  else if(slot && slot.start){
+    const m = BLOCKS.find(b=>b.start===slot.start && b.end===slot.end);
+    bSel.value = m ? m.n : "";
+  } else bSel.value = 1;
+  syncBlock();
+
+  row._read = () => {
+    const blk = bSel.value ? +bSel.value : undefined;
+    const b = BLOCKS.find(x=>x.n===blk);
+    return { day:+daySel.value, start: b ? b.start : t1.value, end: b ? b.end : t2.value, block: blk };
+  };
   host.appendChild(row);
 }
 
@@ -54,7 +71,6 @@ function fillForm(c){
   $("#fWeeks").value     = c ? esc(c.weeks) : "1-16";
   $("#fStatus").value    = c ? c.status : "option";
   $("#fNote").value      = c ? esc(c.note) : "";
-  $("#fCode").value      = "";
   $("#slotRows").innerHTML = "";
   if(c && c.slots && c.slots.length) c.slots.forEach(addSlotRow);
   else addSlotRow();
@@ -63,8 +79,8 @@ function fillForm(c){
   const lead = $("#formLead");
   if(lead){
     lead.textContent = c
-      ? "Editing “"+(c.titleEn||c.titleCn||"this course")+"”. Change any field and click Save course, or Delete course to remove it."
-      : "For courses with fixed times instead of a block code — such as the SEM electives from the MBA schedule (8:00–11:25, 13:30–16:55, 19:00–22:00). This same form is used to edit an existing course — click any course in the Course list to open it here.";
+      ? "Editing “"+(c.titleEn||c.titleCn||"this course")+"”. Change anything below, then Save course — or Delete course to remove it."
+      : "Enter a course by hand. Only a title and one meeting time are required; everything else is optional. Already have one? Click any course in the Course list to edit it here — or use the buttons on the right to import.";
   }
 }
 

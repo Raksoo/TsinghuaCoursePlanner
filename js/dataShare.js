@@ -92,6 +92,44 @@ function importJSONFile(file){
   r.readAsText(file);
 }
 
+/* ============================================================
+   Share by link: the whole course list is packed into the URL
+   hash (#plan=…), so a friend just opens the link — no file.
+   ============================================================ */
+function sharePlan(){
+  try{
+    const json = JSON.stringify({ v:1, courses: state.courses, goal: state.goal });
+    const url = location.origin + location.pathname + "#plan=" + btoa(unescape(encodeURIComponent(json)));
+    const fallback = () => window.prompt("Copy this share link:", url);
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(
+        () => toast("Share link copied — paste it to a friend"),
+        () => fallback()
+      );
+    } else fallback();
+  }catch(e){ alert("Could not build a share link: "+e.message); }
+}
+
+/* On load: if the URL carries a shared plan, offer to load it, then
+   strip the hash so a reload or bookmark doesn't ask again. */
+function importFromHash(){
+  const m = location.hash.match(/[#&]plan=([^&]+)/);
+  if(!m) return;
+  try{
+    const p = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    const list = Array.isArray(p) ? p : p.courses;
+    if(Array.isArray(list) && list.length &&
+       confirm("This link contains a shared plan with "+list.length+" course"+(list.length===1?"":"s")+
+               ". Load it? This replaces your current list.")){
+      state.courses = list.map(c=>Object.assign({id:uid(), status:"option", slots:[], weeks:"1-16"}, c));
+      if(p.goal!=null) state.goal = parseFloat(p.goal)||0;
+      save();
+      toast(state.courses.length+" courses loaded from the link");
+    }
+  }catch(e){ /* malformed link — ignore */ }
+  history.replaceState(null, "", location.pathname + location.search);
+}
+
 function resetToStartingCourses(){
   if(confirm("Replace all courses with the four starting courses?")){
     state.courses = seedCourses(); save(); renderAll(); toast("Reset done");

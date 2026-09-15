@@ -115,7 +115,6 @@ function renderGrid(){
       node.style.height = Math.max((ev.e-ev.s)*PPM - 4, 26)+"px";
       node.appendChild(el("span","t", c.titleEn || c.titleCn));
       node.appendChild(el("span","m", ev.start+"–"+ev.end + (ev.block?" · Block "+ev.block:"")));
-      if(c.instructor) node.appendChild(el("span","m", c.instructor));
       if(c.room) node.appendChild(el("span","m", c.room));
       node.appendChild(el("span","m", c.credits+" CP · "+statusLabel(c.status)));
       node.title = (c.titleEn||"")+"\n"+(c.titleCn||"")+"\n"+ev.start+"–"+ev.end+"\nWeeks "+c.weeks+(c.note?"\n"+c.note:"");
@@ -194,5 +193,8 @@ function renderNowBadge(){
   if(info.raw < 1) label = "Semester starts week 1";
   else if(info.raw > TOTAL_WEEKS) label = "Semester ended (week "+TOTAL_WEEKS+")";
   else label = "Now: Week "+info.week+" of "+TOTAL_WEEKS;
-  host.appendChild(document.createTextNode(label));
+  host.appendChild(el("span","kw-main", label));
+  const d = new Date();
+  const dow = DAYS_SHORT[(d.getDay()+6)%7];   // Mon-indexed
+  host.appendChild(el("span","kw-date", dow+", "+MONTHS[d.getMonth()]+" "+d.getDate()));
 }

@@ -18,6 +18,7 @@ function renderAll(){
 
 function init(){
   load();
+  importFromHash();
 
   STATUS.forEach(s=>{
     const o1 = el("option", null, s.label); o1.value = s.id; $("#fStatus").appendChild(o1);
@@ -91,14 +92,6 @@ function init(){
   });
 
   $("#addSlot").addEventListener("click", ()=>addSlotRow());
-  $("#applyCode").addEventListener("click", ()=>{
-    const {slots, weeks} = slotsFromCode($("#fCode").value);
-    if(!slots.length){ toast("Expected format: 2-6(week 1-16)"); return; }
-    $("#slotRows").innerHTML = "";
-    slots.forEach(addSlotRow);
-    if(weeks) $("#fWeeks").value = weeks;
-    toast(slots.length+(slots.length===1?" meeting applied":" meetings applied"));
-  });
 
   $("#saveCourse").addEventListener("click", ()=>{
     const c = readForm();
@@ -117,6 +110,12 @@ function init(){
     fillForm(null);
   });
 
+  $("#goalInput").addEventListener("input", e=>{
+    state.goal = parseFloat(e.target.value) || 0;
+    save(); renderGoal();
+  });
+
+  $("#shareBtn").addEventListener("click", sharePlan);
   $("#exportBtn").addEventListener("click", exportJSON);
   $("#importBtn").addEventListener("click", ()=>$("#importFile").click());
   $("#importFile").addEventListener("change", e=>{

@@ -131,16 +131,25 @@ function slotText(c){
   if(!c.slots || !c.slots.length) return "—";
   return c.slots.map(s=>DAYS_SHORT[s.day-1]+" "+s.start+"–"+s.end+(s.block?" (B"+s.block+")":"")).join("; ");
 }
-function toast(msg){
+function toast(msg, actionLabel, actionFn){
   const host = $("#toastHost"); host.innerHTML = "";
-  const t = el("div","toast",msg); host.appendChild(t);
-  setTimeout(()=>{ if(t.parentNode) t.remove(); }, 2600);
+  const t = el("div","toast", msg);
+  if(actionLabel && actionFn){
+    const b = el("button","toast-action", actionLabel);
+    b.addEventListener("click", ()=>{ t.remove(); actionFn(); });
+    t.appendChild(b);
+    setTimeout(()=>{ if(t.parentNode) t.remove(); }, 6000);  // longer window so an undo is catchable
+  } else {
+    setTimeout(()=>{ if(t.parentNode) t.remove(); }, 2600);
+  }
+  host.appendChild(t);
+  return t;
 }
 
 /* ============================================================
    State and storage
    ============================================================ */
-let state = { courses: [], visible: {booked:true, bid:true, option:true, out:false}, week: 1 };
+let state = { courses: [], visible: {booked:true, bid:true, option:true, out:false}, week: 1, goal: 0 };
 let storageOK = true;
 
 function save(){
@@ -157,6 +166,7 @@ function load(){
         state.courses = p.courses;
         if(p.visible) state.visible = Object.assign(state.visible, p.visible);
         if(p.week) state.week = p.week;
+        if(p.goal) state.goal = parseFloat(p.goal) || 0;
         return;
       }
     }
