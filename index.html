@@ -20,7 +20,7 @@
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" aria-selected="true" data-panel="week">Week view</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="list">Course list</button>
-      <button class="tab" role="tab" aria-selected="false" data-panel="add">Add courses</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="add">Add / edit courses</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="data">Data &amp; sharing</button>
     </div>
   </div>
@@ -55,8 +55,8 @@
   <!-- ============ COURSE LIST ============ -->
   <section class="panel" id="panel-list">
     <h2>Course list</h2>
-    <p class="lead">Change a status and the week view updates immediately. Setting a course to “Dropped” moves it
-      into the archive below, out of the way but not deleted.</p>
+    <p class="lead">Click anywhere on a course to edit it. Change a status and the week view updates immediately —
+      setting a course to “Dropped” moves it into the archive below, out of the way but not deleted.</p>
     <div class="bar">
       <label class="field">
         <span>Search</span>
@@ -97,14 +97,15 @@
 
   <!-- ============ ADD COURSES ============ -->
   <section class="panel" id="panel-add">
-    <div class="two">
+    <div class="two two-uneven">
       <div>
-        <h2>Paste from the course system</h2>
-        <p class="lead">Paste the lines of a course row from the Tsinghua system — stacked or as a table row.
-          Separate several courses with a blank line. The time format
-          <code class="k">2-6(week 1-16)</code> is read as weekday&#8209;block.</p>
-        <div class="form">
-          <textarea id="pasteBox" spellcheck="false" placeholder="Accounting Principles
+        <details class="paste-details" open>
+          <summary><h2 style="display:inline">Paste from the course system</h2></summary>
+          <p class="lead">Paste the lines of a course row from the Tsinghua system — stacked or as a table row.
+            Separate several courses with a blank line. The time format
+            <code class="k">2-6(week 1-16)</code> is read as weekday&#8209;block.</p>
+          <div class="form form-compact">
+            <textarea id="pasteBox" spellcheck="false" placeholder="Accounting Principles
 会计学原理
 30510123
 1
@@ -112,19 +113,21 @@
 School of Economics and Management
 张海燕
 2-6(week 1-16)"></textarea>
-          <div class="formactions">
-            <button class="btn" id="parseBtn">Read courses</button>
-            <button class="btn ghost" id="clearPaste">Clear field</button>
-            <span class="hint">You get a preview before anything is saved.</span>
+            <div class="formactions">
+              <button class="btn" id="parseBtn">Read courses</button>
+              <button class="btn ghost" id="clearPaste">Clear field</button>
+              <span class="hint">You get a preview before anything is saved.</span>
+            </div>
+            <div class="preview" id="parsePreview"></div>
           </div>
-          <div class="preview" id="parsePreview"></div>
-        </div>
+        </details>
       </div>
 
       <div>
         <h2 id="formTitle">Add a course manually</h2>
-        <p class="lead">For courses with fixed times instead of a block code — such as the SEM electives from the
-          MBA schedule (8:00–11:25, 13:30–16:55, 19:00–22:00).</p>
+        <p class="lead" id="formLead">For courses with fixed times instead of a block code — such as the SEM
+          electives from the MBA schedule (8:00–11:25, 13:30–16:55, 19:00–22:00). This same form is used to edit
+          an existing course — click any course in the Course list to open it here.</p>
         <div class="form">
           <input type="hidden" id="fId">
           <div class="formgrid">
@@ -141,6 +144,10 @@ School of Economics and Management
             <label class="field"><span>Status</span><select id="fStatus"></select></label>
             <label class="field"><span>Note</span><input type="text" id="fNote"></label>
           </div>
+          <p class="hint hint-block">
+            <strong>Weeks</strong> applies to every meeting below together — it's the set of semester weeks
+            (1–18) this course runs in, regardless of which weekdays it meets on.
+          </p>
 
           <div class="slots">
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -154,6 +161,12 @@ School of Economics and Management
                 </span>
               </label>
             </div>
+            <p class="hint" style="margin-top:8px">
+              One row = one recurring weekly time slot. Most courses need only one — but a course that meets on
+              two different weekdays (e.g. Monday <em>and</em> Wednesday) needs two rows: click
+              <strong>Add meeting</strong> for the second one. “Apply block code” replaces all rows below with
+              what the code describes, rather than adding to them.
+            </p>
             <div id="slotRows" style="margin-top:12px"></div>
           </div>
 
@@ -187,9 +200,9 @@ School of Economics and Management
         the other person imports the exported JSON file.
       </p>
       <p class="hint" style="margin-top:6px">
-        Calendar import: the .ics file uses whichever statuses are currently shown on the week view (toggle them
-        there first). On Android, open the downloaded file with the Google Calendar app, or import it into Google
-        Calendar on desktop — it then syncs to your phone automatically.
+        Calendar import: “Export to calendar” opens a dialog where you pick the week range and courses first. On
+        Android, open the downloaded file with the Google Calendar app, or import it into Google Calendar on
+        desktop — it then syncs to your phone automatically.
       </p>
     </div>
 
@@ -201,14 +214,45 @@ School of Economics and Management
 </main>
 <div id="toastHost"></div>
 <button class="now-badge" id="nowBadge" type="button" title="Jump to the current week"></button>
-<style media="print">
-  header.top,.tabs,.bar,.hint,.formactions,.now-badge,.archive{display:none !important}
-  .panel{display:none !important}
-  #panel-week{display:block !important}
-  body{background:#fff}
-  main{padding:0}
-  .gridwrap{border:0}
-</style>
+<div id="printSheet" class="print-sheet"></div>
+
+<div class="modal-overlay" id="icsModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="icsModalTitle">
+    <h3 id="icsModalTitle">Export to calendar (.ics)</h3>
+    <p class="hint">Choose which weeks and which courses to include, then export.</p>
+
+    <div class="modal-section">
+      <div class="modal-section-head">
+        <span>Weeks</span>
+        <span class="modal-quick">
+          <button type="button" class="btn ghost small" id="icsWeeksAll">All weeks</button>
+          <button type="button" class="btn ghost small" id="icsWeeksCurrent">Current week</button>
+        </span>
+      </div>
+      <div class="formgrid" style="grid-template-columns:1fr 1fr">
+        <label class="field"><span>From week</span><select id="icsWeekFrom"></select></label>
+        <label class="field"><span>To week</span><select id="icsWeekTo"></select></label>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-head">
+        <span>Courses</span>
+        <span class="modal-quick">
+          <button type="button" class="btn ghost small" id="icsCoursesAll">Select all</button>
+          <button type="button" class="btn ghost small" id="icsCoursesNone">Select none</button>
+        </span>
+      </div>
+      <div id="icsCourseCheckboxes" class="ics-course-list"></div>
+    </div>
+
+    <div class="formactions">
+      <button class="btn" id="icsModalExport">Export .ics</button>
+      <button class="btn ghost" id="icsModalCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/core.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/weekView.js"></script>
@@ -217,6 +261,7 @@ School of Economics and Management
 <script src="js/archive.js"></script>
 <script src="js/form.js"></script>
 <script src="js/icsExport.js"></script>
+<script src="js/printView.js"></script>
 <script src="js/dataShare.js"></script>
 <script src="js/main.js"></script>
 </body>

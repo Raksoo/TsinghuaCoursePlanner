@@ -40,6 +40,10 @@ function renderTable(){
 
   rows.forEach(c=>{
     const tr = el("tr");
+    tr.addEventListener("click", e=>{
+      if(e.target.closest("select, button, input")) return;
+      editCourse(c.id);
+    });
 
     const tdS = el("td");
     const sel = el("select","statussel "+c.status);

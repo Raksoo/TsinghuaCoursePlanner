@@ -60,6 +60,12 @@ function fillForm(c){
   else addSlotRow();
   $("#formTitle").textContent = c ? "Edit course" : "Add a course manually";
   $("#deleteCourse").style.display = c ? "inline-block" : "none";
+  const lead = $("#formLead");
+  if(lead){
+    lead.textContent = c
+      ? "Editing “"+(c.titleEn||c.titleCn||"this course")+"”. Change any field and click Save course, or Delete course to remove it."
+      : "For courses with fixed times instead of a block code — such as the SEM electives from the MBA schedule (8:00–11:25, 13:30–16:55, 19:00–22:00). This same form is used to edit an existing course — click any course in the Course list to open it here.";
+  }
 }
 
 function editCourse(id){

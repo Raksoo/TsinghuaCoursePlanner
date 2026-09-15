@@ -28,6 +28,10 @@ function renderArchive(){
 
   dropped.forEach(c=>{
     const tr = el("tr","dim");
+    tr.addEventListener("click", e=>{
+      if(e.target.closest("select, button, input")) return;
+      editCourse(c.id);
+    });
     const tdT = el("td");
     tdT.appendChild(el("span","title", c.titleEn || "(no English title)"));
     if(c.titleCn) tdT.appendChild(el("span","cn", c.titleCn));

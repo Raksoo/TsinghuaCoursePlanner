@@ -131,6 +131,10 @@ th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);verti
 th{background:#f6f2f8;font-weight:600;font-size:12.5px;color:var(--muted);position:sticky;top:0;z-index:2}
 tbody tr:hover{background:#fcfafd}
 tbody tr.dim td{color:var(--muted)}
+.tablewrap.courses tbody tr,
+.archive-body tbody tr{cursor:pointer}
+.tablewrap.courses tbody tr:hover,
+.archive-body tbody tr:hover{background:var(--purple-soft)}
 td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 td .cn{color:var(--muted);font-size:12.5px;display:block}
 td .title{font-weight:600}
@@ -165,13 +169,76 @@ select.statussel.out{background:var(--s-out-bg);border-color:var(--s-out);color:
 .hint{font-size:12.5px;color:var(--muted)}
 .preview{margin-top:14px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.two.two-uneven{grid-template-columns:minmax(260px,0.85fr) 1.15fr}
 @media(max-width:900px){.two{grid-template-columns:1fr}}
+
+/* Collapsible paste-parser panel (kept compact; the edit/add form is primary) */
+.paste-details{border:0}
+.paste-details > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.paste-details > summary::-webkit-details-marker{display:none}
+.paste-details > summary::before{content:"\25B8";display:inline-block;color:var(--muted);font-size:14px;transition:transform .15s}
+.paste-details[open] > summary::before{transform:rotate(90deg)}
+.form-compact textarea{min-height:96px}
+
+.hint-block{margin:10px 0 0;padding:8px 11px;background:var(--purple-soft);border-radius:8px}
 code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;box-shadow:0 6px 20px rgba(28,20,36,.25);z-index:50}
 @media (prefers-reduced-motion:no-preference){
   .toast{animation:pop .18s ease-out}
   @keyframes pop{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
 }
+
+/* ---------- ICS export modal ---------- */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(28,20,36,.45);z-index:70;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay[hidden]{display:none}
+.modal{
+  background:var(--card);border-radius:14px;max-width:560px;width:100%;
+  max-height:88vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(28,20,36,.35);
+}
+.modal h3{margin:0 0 4px;font-size:17px;font-weight:650}
+.modal-section{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.modal-section:first-of-type{border-top:0;margin-top:14px;padding-top:0}
+.modal-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.modal-section-head > span:first-child{font-size:12.5px;font-weight:620;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.modal-quick{display:flex;gap:6px}
+.ics-course-list{max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:10px}
+.ics-course-row{display:flex;align-items:center;gap:9px;padding:8px 11px;border-bottom:1px solid var(--line);font-size:13.5px}
+.ics-course-row:last-child{border-bottom:0}
+.ics-course-row .cn{color:var(--muted);font-size:12px;margin-left:auto;white-space:nowrap;padding-left:10px}
+.ics-course-row input[type=checkbox]{width:16px;height:16px;flex:none}
+
+/* ---------- Print sheet (built separately from the on-screen grid; see js/printView.js) ---------- */
+.print-sheet{display:none}
+@media print{
+  header.top,.tabs,.now-badge,#toastHost,.modal-overlay{display:none !important}
+  main{display:none !important}
+  body{background:#fff}
+  .print-sheet{display:block}
+}
+@page{ size: landscape; margin: 12mm; }
+.print-head h1{font-size:16px;margin:0 0 2px;font-weight:700}
+.print-sub{font-size:12px;color:#555;margin-bottom:10px}
+.print-warn{border:1px solid #e3c3c3;background:#fbeaea;padding:7px 10px;border-radius:6px;font-size:11px;margin-bottom:10px}
+.print-grid{display:grid;gap:10px;align-items:start}
+.print-daytitle{font-weight:700;font-size:12px;border-bottom:1.5px solid #333;padding-bottom:4px;margin-bottom:7px}
+.print-daytitle small{display:block;font-weight:400;color:#666;font-size:10px}
+.print-card{
+  border:1px solid #ccc;border-left:3px solid #666;border-radius:4px;
+  padding:5px 7px;margin-bottom:6px;font-size:10.5px;line-height:1.35;
+  break-inside:avoid;page-break-inside:avoid;
+}
+.print-card.booked{border-left-color:#186b4d}
+.print-card.bid{border-left-color:#9a5b06}
+.print-card.option{border-left-color:#2f4f9e}
+.print-card.out{border-left-color:#6f6479}
+.print-time{font-weight:600}
+.print-title{font-weight:700;margin:2px 0}
+.print-meta{color:#555}
+.print-empty{color:#999;font-size:10px;font-style:italic}
+.print-foot{margin-top:14px;font-size:9px;color:#999}
 
 /* ---------- Current-week badge (fixed corner) ---------- */
 .now-badge{

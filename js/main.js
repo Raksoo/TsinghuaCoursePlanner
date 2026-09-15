@@ -86,8 +86,31 @@ function init(){
     importJSONFile(f);
     e.target.value = "";
   });
-  $("#icsExportBtn").addEventListener("click", downloadICS);
-  $("#printBtn").addEventListener("click", ()=>{ showPanel("week"); setTimeout(()=>window.print(), 120); });
+  $("#icsExportBtn").addEventListener("click", openICSModal);
+  $("#icsModalCancel").addEventListener("click", closeICSModal);
+  $("#icsModalOverlay").addEventListener("click", e=>{ if(e.target.id==="icsModalOverlay") closeICSModal(); });
+  $("#icsWeeksAll").addEventListener("click", ()=>{ $("#icsWeekFrom").value="1"; $("#icsWeekTo").value=String(TOTAL_WEEKS); });
+  $("#icsWeeksCurrent").addEventListener("click", ()=>{
+    const w = currentSemesterWeek().week;
+    $("#icsWeekFrom").value = String(w); $("#icsWeekTo").value = String(w);
+  });
+  $("#icsCoursesAll").addEventListener("click", ()=>{
+    document.querySelectorAll("#icsCourseCheckboxes input[type=checkbox]").forEach(cb=>cb.checked=true);
+  });
+  $("#icsCoursesNone").addEventListener("click", ()=>{
+    document.querySelectorAll("#icsCourseCheckboxes input[type=checkbox]").forEach(cb=>cb.checked=false);
+  });
+  $("#icsModalExport").addEventListener("click", ()=>{
+    let weekFrom = +$("#icsWeekFrom").value, weekTo = +$("#icsWeekTo").value;
+    if(weekFrom > weekTo){ const t=weekFrom; weekFrom=weekTo; weekTo=t; }
+    const ok = downloadICS({ courseIds: icsModalSelectedIds(), weekFrom, weekTo });
+    if(ok) closeICSModal();
+  });
+
+  $("#printBtn").addEventListener("click", ()=>{
+    renderPrintSheet();
+    setTimeout(()=>window.print(), 120);
+  });
   $("#resetAll").addEventListener("click", resetToStartingCourses);
 
   $("#nowBadge").addEventListener("click", ()=>{
@@ -95,6 +118,10 @@ function init(){
     state.week = info.week;
     save(); renderWeekSelect(); renderGrid();
     showPanel("week");
+  });
+
+  document.addEventListener("keydown", e=>{
+    if(e.key==="Escape" && !$("#icsModalOverlay").hidden) closeICSModal();
   });
 
   // Keep the "now" badge correct even if the tab is left open across midnight.

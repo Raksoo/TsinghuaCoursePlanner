@@ -7,6 +7,10 @@
    converted to UTC explicitly — this keeps event times correct
    regardless of the device/browser timezone that later imports
    the file.
+
+   A settings modal lets the user pick a week range and which
+   individual courses to include before exporting, rather than
+   always exporting whatever the on-screen filters happen to show.
    ============================================================ */
 function icsEscape(s){
   return String(s==null?"":s)
@@ -44,8 +48,11 @@ function foldICSLine(line){
   return out;
 }
 
-function buildICS(statusesToInclude){
-  const include = statusesToInclude || Object.keys(state.visible).filter(k=>state.visible[k]);
+/* opts: {courseIds: Set<string>, weekFrom: number, weekTo: number} */
+function buildICS(opts){
+  const courseIds = (opts && opts.courseIds) || new Set(state.courses.filter(isVisible).map(c=>c.id));
+  const weekFrom = (opts && opts.weekFrom) || 1;
+  const weekTo = (opts && opts.weekTo) || TOTAL_WEEKS;
   const now = fmtICSDate(new Date());
   const lines = [
     "BEGIN:VCALENDAR",
@@ -57,9 +64,9 @@ function buildICS(statusesToInclude){
 
   let count = 0;
   state.courses
-    .filter(c => include.includes(c.status))
+    .filter(c => courseIds.has(c.id))
     .forEach(c=>{
-      const weeks = parseWeeks(c.weeks);
+      const weeks = parseWeeks(c.weeks).filter(w => w>=weekFrom && w<=weekTo);
       (c.slots||[]).forEach((slot, si)=>{
         weeks.forEach(w=>{
           const dtStart = beijingToUTC(w, slot.day, slot.start);
@@ -91,11 +98,11 @@ function buildICS(statusesToInclude){
   return { text: lines.join("\r\n"), count };
 }
 
-function downloadICS(){
-  const { text, count } = buildICS();
+function downloadICS(opts){
+  const { text, count } = buildICS(opts);
   if(!count){
-    toast("No meetings to export — check the status filters in the week view");
-    return;
+    toast("No meetings match that selection");
+    return false;
   }
   const blob = new Blob([text], {type:"text/calendar;charset=utf-8"});
   const a = document.createElement("a");
@@ -104,4 +111,44 @@ function downloadICS(){
   document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
   toast(count+(count===1?" event exported":" events exported"));
+  return true;
+}
+
+/* ============================================================
+   Export settings modal
+   ============================================================ */
+function openICSModal(){
+  const from = $("#icsWeekFrom"), to = $("#icsWeekTo");
+  from.innerHTML = ""; to.innerHTML = "";
+  for(let w=1; w<=TOTAL_WEEKS; w++){
+    const o1 = el("option", null, "Week "+w); o1.value = w;
+    const o2 = el("option", null, "Week "+w); o2.value = w;
+    from.appendChild(o1); to.appendChild(o2);
+  }
+  from.value = "1";
+  to.value = String(TOTAL_WEEKS);
+
+  const host = $("#icsCourseCheckboxes");
+  host.innerHTML = "";
+  state.courses.forEach(c=>{
+    const row = el("label","ics-course-row");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.dataset.id = c.id;
+    cb.checked = c.status !== "out"; // dropped courses default unchecked
+    row.appendChild(cb);
+    row.appendChild(el("span",null, c.titleEn || c.titleCn || "(no title)"));
+    row.appendChild(el("span","cn", statusLabel(c.status)));
+    host.appendChild(row);
+  });
+
+  $("#icsModalOverlay").hidden = false;
+}
+function closeICSModal(){ $("#icsModalOverlay").hidden = true; }
+
+function icsModalSelectedIds(){
+  return new Set(
+    [...document.querySelectorAll("#icsCourseCheckboxes input[type=checkbox]:checked")]
+      .map(cb=>cb.dataset.id)
+  );
 }
