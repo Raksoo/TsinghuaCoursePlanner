@@ -104,7 +104,7 @@ textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Men
 .summary b{color:var(--ink);font-weight:620;font-variant-numeric:tabular-nums}
 
 /* ---------- Week grid ---------- */
-.gridwrap{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0 0 8px;overflow-x:auto}
+.gridwrap{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0;overflow-x:auto}
 .griddays{display:grid;position:relative;min-width:780px}
 .dayhead{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line-strong);padding:10px 8px 8px;text-align:center;font-size:13.5px;font-weight:600}
 .dayhead small{display:block;font-weight:420;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
@@ -114,8 +114,13 @@ textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Men
 .blocklabel b{display:block;color:var(--ink);font-size:12px;font-weight:600}
 .daycol{position:relative;border-right:1px solid var(--line)}
 .daycol:last-child{border-right:0}
-.band{position:absolute;left:0;right:0;background:#faf7fb;border-top:1px solid var(--line);pointer-events:none}
-.band.alt{background:#fff}
+.band{position:absolute;left:0;right:0;background:#f7f4f9;pointer-events:none}
+.band.alt{background:#fdfcfe}
+
+/* Long breaks (lunch / dinner): a light diagonal hatch, labelled in the gutter */
+.brk{position:absolute;left:0;right:0;pointer-events:none;
+  background:repeating-linear-gradient(135deg,#f5f2f8 0 5px,#fcfbfd 5px 11px)}
+.brk-label{position:absolute;left:6px;right:6px;display:flex;align-items:center;justify-content:flex-end;text-align:right;font-size:10px;font-style:italic;color:var(--muted);line-height:1.2}
 
 .ev{position:absolute;border-radius:8px;padding:6px 8px;overflow:hidden;border-left:4px solid;font-size:12.5px;line-height:1.35;cursor:pointer;box-shadow:0 1px 2px rgba(28,20,36,.07)}
 .ev:hover{filter:brightness(.97)}
@@ -176,11 +181,13 @@ tbody tr.dim td{color:var(--muted)}
 .tablewrap.courses tbody tr:hover,
 .archive-body tbody tr:hover{background:var(--purple-soft)}
 td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+td.time-cell{font-variant-numeric:tabular-nums;white-space:normal;min-width:130px}
 .weekstrip{display:flex;gap:1px;margin-top:5px;max-width:160px}
 .weekstrip .wk{flex:1;height:5px;border-radius:1px;background:var(--line-strong);opacity:.4}
 .weekstrip .wk.on{background:var(--purple-mid);opacity:1}
 td .cn{color:var(--muted);font-size:12.5px;display:block}
 td .title{font-weight:600}
+.note-flag{font-size:11px;opacity:.65;cursor:help;font-weight:400}
 select.statussel{padding:4px 6px;min-width:auto;font-size:12.5px;border-radius:6px;font-weight:560}
 select.statussel.booked{background:var(--s-booked-bg);border-color:var(--s-booked);color:var(--s-booked)}
 select.statussel.bid{background:var(--s-bid-bg);border-color:var(--s-bid);color:var(--s-bid)}

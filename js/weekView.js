@@ -50,10 +50,17 @@ function renderGrid(){
   const days = [];
   for(let d=1; d<=maxDay; d++) days.push(d);
 
-  let minM = toMin("08:00"), maxM = toMin("22:00");
+  let minM = toMin(BLOCKS[0].start), maxM = toMin(BLOCKS[BLOCKS.length-1].end);
   events.forEach(ev=>{ minM = Math.min(minM, ev.s-10); maxM = Math.max(maxM, ev.e+10); });
   const PPM = 0.95;
   const height = (maxM - minM) * PPM;
+
+  // Long gaps between blocks (kept to scale, labelled) — lunch / dinner.
+  const BREAKS = [];
+  for(let i=0;i<BLOCKS.length-1;i++){
+    const gs = toMin(BLOCKS[i].end), ge = toMin(BLOCKS[i+1].start);
+    if(ge-gs >= 30) BREAKS.push({ start:gs, end:ge, label: gs < toMin("14:00") ? "Lunch break" : "Dinner break" });
+  }
 
   grid.style.gridTemplateColumns = "78px repeat("+days.length+", minmax(130px,1fr))";
 
@@ -75,25 +82,37 @@ function renderGrid(){
     lab.appendChild(document.createTextNode(b.start+"–"+b.end));
     gutter.appendChild(lab);
   });
+  BREAKS.forEach(br=>{
+    const lab = el("div","brk-label", br.label);
+    lab.style.top = ((br.start-minM)*PPM)+"px";
+    lab.style.height = ((br.end-br.start)*PPM)+"px";
+    gutter.appendChild(lab);
+  });
   grid.appendChild(gutter);
 
   const clashes = week==="all" ? findClashes() : findClashes().filter(c=>c.weeks.includes(week));
   const clashIds = new Set();
   clashes.forEach(c=>{ clashIds.add(c.a.id); clashIds.add(c.b.id); });
 
-  days.forEach(d=>{
+  days.forEach((d,di)=>{
     const col = el("div","daycol");
     col.style.height = height+"px";
 
+    // Each block band covers only its own time span (not the gap after it).
     BLOCKS.forEach((b,i)=>{
       const band = el("div","band"+(i%2?" alt":""));
-      const bandTop = toMin(b.start);
-      const bandBottom = i+1<BLOCKS.length ? toMin(BLOCKS[i+1].start) : maxM;
-      band.style.top = ((bandTop-minM)*PPM)+"px";
-      band.style.height = ((bandBottom-bandTop)*PPM)+"px";
+      band.style.top = ((toMin(b.start)-minM)*PPM)+"px";
+      band.style.height = ((toMin(b.end)-toMin(b.start))*PPM)+"px";
       col.appendChild(band);
     });
-
+    // Long breaks, hatched, with a small white margin off the blocks above/below.
+    const BRK_INSET = 6;
+    BREAKS.forEach(br=>{
+      const bd = el("div","brk");
+      bd.style.top = ((br.start-minM)*PPM + BRK_INSET)+"px";
+      bd.style.height = Math.max((br.end-br.start)*PPM - BRK_INSET*2, 6)+"px";
+      col.appendChild(bd);
+    });
     const dayEv = events.filter(ev=>ev.day===d).sort((a,b)=>a.s-b.s || a.e-b.e);
     // Greedy column assignment (a column is reused once its last event ends).
     const colEnds = [];

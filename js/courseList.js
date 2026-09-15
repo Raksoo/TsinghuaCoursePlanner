@@ -108,14 +108,19 @@ function renderTable(){
     tdS.appendChild(sel); tr.appendChild(tdS);
 
     const tdT = el("td");
-    tdT.appendChild(el("span","title", c.titleEn || "(no English title)"));
+    const titleEl = el("span","title", c.titleEn || "(no English title)");
+    if(c.note){
+      const flag = el("span","note-flag","📝"); flag.title = c.note;
+      titleEl.appendChild(document.createTextNode(" ")); titleEl.appendChild(flag);
+    }
+    tdT.appendChild(titleEl);
     if(c.titleCn) tdT.appendChild(el("span","cn", c.titleCn));
-    if(c.note) tdT.appendChild(el("span","cn", "› "+c.note));
     tr.appendChild(tdT);
+    if(c.note) tr.title = c.note;   // note shows as a tooltip on hover, not inline
 
     tr.appendChild(el("td","num", (c.number||"—") + (c.seq? "-"+c.seq : "")));
     tr.appendChild(el("td", null, c.instructor||"—"));
-    tr.appendChild(el("td","num", slotText(c)));
+    tr.appendChild(el("td","time-cell", slotText(c)));
 
     const tdW = el("td","num");
     tdW.appendChild(el("span","wktext", c.weeks||"—"));
