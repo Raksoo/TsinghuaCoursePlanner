@@ -68,6 +68,8 @@ h2{font-size:17px;font-weight:640;letter-spacing:-0.01em;margin:0 0 4px}
 }
 .field{display:flex;flex-direction:column;gap:5px}
 .field > span{font-size:12px;color:var(--muted);font-weight:560}
+/* Course-list filters: keep Search and Status the same size */
+#search,#listStatusFilter{width:230px;max-width:100%}
 select,input[type=text],input[type=number],input[type=time],textarea{
   background:#fff;border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;min-width:120px;
 }
@@ -119,6 +121,7 @@ textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Men
 .ev:hover{filter:brightness(.97)}
 .ev .t{font-weight:640;display:block;margin-bottom:2px}
 .ev .m{color:inherit;opacity:.78;font-size:11.5px;display:block}
+.ev .m.wk{opacity:1;font-weight:600;margin-top:1px}
 .ev.clash{outline:2px solid var(--danger);outline-offset:-2px}
 .ev.booked{background:var(--s-booked-bg);border-color:var(--s-booked);color:#12352a}
 .ev.bid{background:var(--s-bid-bg);border-color:var(--s-bid);color:#4a2d05}
@@ -159,6 +162,13 @@ table.schedule-table tbody tr:first-child.block-start > td{border-top:0}
 table{border-collapse:collapse;width:100%;min-width:1020px}
 th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;font-size:13.5px}
 th{background:#f6f2f8;font-weight:600;font-size:12.5px;color:var(--muted);position:sticky;top:0;z-index:2}
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{color:var(--purple)}
+th.sortable::after{content:"⇅";opacity:.32;margin-left:5px;font-size:11px}
+th.sortable.sorted{color:var(--purple)}
+th.sortable.sorted::after{opacity:1}
+th.sortable.sorted[data-dir="asc"]::after{content:"↑"}
+th.sortable.sorted[data-dir="desc"]::after{content:"↓"}
 tbody tr:hover{background:#fcfafd}
 tbody tr.dim td{color:var(--muted)}
 .tablewrap.courses tbody tr,
@@ -210,6 +220,19 @@ select.statussel.out{background:var(--s-out-bg);border-color:var(--s-out);color:
 .fsection-title .req{font-size:15px}
 .field-required input,.field-required select{background:#fff9f2;border-color:#e6c9a8}
 .field-required input:focus{border-color:var(--purple-mid);background:#fff}
+
+/* Status "what do these mean?" — trigger beside the label, floating mini-popup */
+.status-field{position:relative}
+.status-field .labelrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.infobtn{background:none;border:0;padding:0;cursor:pointer;font-size:11px;font-weight:560;color:var(--purple);white-space:nowrap}
+.infobtn:hover{text-decoration:underline}
+.status-field .infopop{
+  position:absolute;right:0;top:24px;z-index:30;width:min(300px,86vw);
+  background:#fff;border:1px solid var(--line-strong);border-radius:10px;
+  box-shadow:0 10px 28px rgba(28,20,36,.20);padding:11px 13px;font-size:12px;line-height:1.8;color:var(--ink);
+}
+.status-field .infopop[hidden]{display:none}
+.status-field .infopop b{font-weight:660}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);border:0}
 
 /* 4-column details grid with explicit spans (collapses on narrow screens) */
@@ -240,6 +263,11 @@ textarea.note-area{min-height:70px;font-family:inherit;font-size:14px;line-heigh
 .formactions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center}
 .hint{font-size:12.5px;color:var(--muted)}
 .preview{margin-top:14px}
+/* editable weeks in the .xls import preview — highlighted so it's clearly "check me" */
+.prev-weeks,.prev-cp{width:100%;min-width:0;padding:4px 6px;font-size:12.5px;border-color:#e0b23c;background:#fffaf0}
+.prev-weeks:focus,.prev-cp:focus{border-color:var(--purple-mid);background:#fff}
+.prev-time{font-variant-numeric:tabular-nums;white-space:normal;font-size:12px;line-height:1.5}
+.xls-warn{margin-top:4px}
 
 /* Add / edit header: title + lead on the left, the paste button on the right */
 .add-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
@@ -251,6 +279,17 @@ textarea.note-area{min-height:70px;font-family:inherit;font-size:14px;line-heigh
 /* Highlighted "preferred" import buttons (accent-soft, not solid — Save stays the primary action) */
 .import-btn{background:var(--purple-soft);border:1.5px solid var(--purple-mid);color:var(--purple);font-weight:640;box-shadow:0 1px 2px rgba(102,8,116,.10)}
 .import-btn:hover{background:#ecd9f1;border-color:var(--purple)}
+.btn > span[aria-hidden]{font-size:15px;line-height:1}
+
+/* "or enter it manually" divider between the quick-import buttons and the form */
+.or-divider{display:flex;align-items:center;gap:12px;margin:18px 0 2px;color:var(--muted);font-size:12px;font-weight:640;text-transform:uppercase;letter-spacing:.04em}
+.or-divider::before,.or-divider::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* Data & sharing: buttons clustered by purpose */
+.datagroups{display:flex;flex-direction:column;gap:18px}
+.datagroup + .datagroup{border-top:1px solid var(--line);padding-top:16px}
+.datagroup-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px}
+.datagroup-btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 @media(max-width:640px){ .add-import-btns{width:100%} .paste-open{flex:1;justify-content:center} }
 
 /* Paste modal: screenshot help + textarea */
@@ -288,6 +327,7 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
 }
 .modal.modal-wide{max-width:640px}
 .modal.modal-ics{max-width:600px}
+.modal.modal-xls{max-width:760px}
 .modal-ics .ics-course-list{max-height:320px}
 .ics-empty{padding:14px;color:var(--muted);font-size:13px;text-align:center}
 .modal h3{margin:0 0 4px;font-size:17px;font-weight:650}

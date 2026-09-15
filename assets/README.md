@@ -10,5 +10,7 @@ Images and sample files used by the planner UI.
   `#pasteModalOverlay`).
 - **`export_schedule_xls.png`** — how to export the schedule (Function menu →
   Course registration information query → Class schedule inquiry → Export to XLS).
-- **`Curriculum for visiting students in Tsinghua University.xls`** — a sample
-  of that XLS export, used as the reference format for the ".xls schedule import".
+- **`Curriculum_for_visiting_students_in_Tsinghua_University.xls`** — a real
+  sample of that XLS export, used as the reference format for the ".xls schedule
+  import". Cells look like `Title(room) (week 1-8)`; the parser splits title,
+  room and (when present) the week range.

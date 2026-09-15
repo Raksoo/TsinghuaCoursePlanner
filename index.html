@@ -79,14 +79,14 @@
       <table>
         <thead>
           <tr>
-            <th style="width:115px">Status</th>
-            <th>Course</th>
-            <th style="width:100px">Number</th>
-            <th style="width:115px">Instructor</th>
-            <th style="width:170px">Time</th>
-            <th style="width:95px">Weeks</th>
-            <th style="width:65px">Credits</th>
-            <th style="width:150px">Room</th>
+            <th class="sortable" data-sort="status" style="width:115px">Status</th>
+            <th class="sortable" data-sort="course">Course</th>
+            <th class="sortable" data-sort="number" style="width:100px">Number</th>
+            <th class="sortable" data-sort="instructor" style="width:115px">Instructor</th>
+            <th class="sortable" data-sort="time" style="width:170px">Time</th>
+            <th class="sortable" data-sort="weeks" style="width:95px">Weeks</th>
+            <th class="sortable" data-sort="credits" style="width:65px">Credits</th>
+            <th class="sortable" data-sort="room" style="width:150px">Room</th>
             <th style="width:130px"></th>
           </tr>
         </thead>
@@ -105,20 +105,22 @@
     <div class="add-head">
       <div>
         <h2 id="formTitle">Add a course manually</h2>
-        <p class="lead" id="formLead">Enter a course by hand. Only a title and one meeting time are required;
-          everything else is optional. Already have one? Click any course in the Course list to edit it here —
-          or use the buttons on the right to import.</p>
+        <p class="lead" id="formLead">Enter a course by hand. Only a title, its credits, and one meeting time are
+          required (marked <em class="req">*</em>); everything else is optional. Already have one? Click any course
+          in the Course list to edit it here — or use the buttons on the right to import.</p>
       </div>
       <div class="add-import-btns">
         <span class="import-hint">⚡ Quickest way — no typing needed:</span>
+        <button class="btn paste-open import-btn" id="openXlsBtn" type="button">
+          <span aria-hidden="true">📥</span> Import schedule from THU Info portal (.xls)
+        </button>
         <button class="btn paste-open import-btn" id="openPasteBtn" type="button">
           <span aria-hidden="true">📋</span> Paste from the course system
         </button>
-        <button class="btn paste-open import-btn" id="openXlsBtn" type="button">
-          <span aria-hidden="true">📄</span> Import schedule (.xls)
-        </button>
       </div>
     </div>
+
+    <div class="or-divider"><span>or enter it manually below</span></div>
 
     <div class="form">
       <input type="hidden" id="fId">
@@ -131,12 +133,23 @@
           <label class="field span-2"><span>Chinese title <em class="opt">optional</em></span><input type="text" id="fTitleCn"></label>
           <label class="field"><span>Course number <em class="opt">optional</em></span><input type="text" id="fNumber"></label>
           <label class="field"><span>Sequence <em class="opt">optional</em></span><input type="text" id="fSeq"></label>
-          <label class="field"><span>Credits</span><input type="number" id="fCredits" step="0.5" min="0"></label>
+          <label class="field field-required"><span>Credits <em class="req" title="required">*</em></span><input type="number" id="fCredits" step="0.5" min="0"></label>
           <label class="field"><span>Language <em class="opt">optional</em></span><input type="text" id="fLang" placeholder="English"></label>
           <label class="field span-2"><span>Instructor <em class="opt">optional</em></span><input type="text" id="fInstructor"></label>
           <label class="field span-2"><span>Department <em class="opt">optional</em></span><input type="text" id="fDept"></label>
           <label class="field span-2"><span>Room <em class="opt">optional</em></span><input type="text" id="fRoom" placeholder="e.g. Rm. A201, Jianhua Bldg."></label>
-          <label class="field span-2"><span>Status</span><select id="fStatus"></select></label>
+          <div class="field span-2 status-field">
+            <span class="labelrow">Status
+              <button type="button" class="infobtn" id="statusInfoBtn" aria-expanded="false">ⓘ What do these mean?</button>
+            </span>
+            <select id="fStatus"></select>
+            <div class="infopop" id="statusInfo" hidden>
+              <b>Booked</b> — you have a confirmed spot<br>
+              <b>Bidding</b> — bid placed, result still pending<br>
+              <b>Option</b> — a candidate you're still weighing up<br>
+              <b>Dropped</b> — removed from your plan (moves to the archive)
+            </div>
+          </div>
         </div>
       </div>
 
@@ -179,25 +192,41 @@
       to pass it on, or export to .ics to bring your schedule into another calendar app.</p>
     <div id="storageNote"></div>
     <div class="form">
-      <div class="formactions" style="margin-top:0">
-        <button class="btn import-btn" id="shareBtn">🔗 Copy share link</button>
-        <button class="btn ghost" id="exportBtn">Export course list (JSON)</button>
-        <button class="btn ghost" id="importBtn">Import course list</button>
-        <input type="file" id="importFile" accept="application/json,.json" style="display:none">
-        <button class="btn" id="icsExportBtn">Export to calendar (.ics)</button>
-        <button class="btn ghost" id="printBtn">Print week view</button>
-        <button class="btn danger" id="resetAll">Reset to starting courses</button>
+      <div class="datagroups">
+        <div class="datagroup">
+          <div class="datagroup-title">Share &amp; back up your plan</div>
+          <div class="datagroup-btns">
+            <button class="btn import-btn" id="shareBtn"><span aria-hidden="true">🔗</span> Copy share link</button>
+            <button class="btn ghost" id="exportBtn"><span aria-hidden="true">💾</span> Export list (JSON)</button>
+            <button class="btn ghost" id="importBtn"><span aria-hidden="true">📥</span> Import list (JSON)</button>
+            <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+          </div>
+          <p class="hint" style="margin:8px 0 0">
+            <strong>Copy share link</strong> is easiest: it copies a link carrying your whole course list — send it to
+            a friend and, when they open it, they're asked whether to load your plan. The JSON file does the same via
+            a file instead of a link.
+          </p>
+        </div>
+
+        <div class="datagroup">
+          <div class="datagroup-title">Calendar &amp; print</div>
+          <div class="datagroup-btns">
+            <button class="btn" id="icsExportBtn"><span aria-hidden="true">📅</span> Export to calendar (.ics)</button>
+            <button class="btn ghost" id="printBtn"><span aria-hidden="true">🖨️</span> Print week view</button>
+          </div>
+          <p class="hint" style="margin:8px 0 0">
+            <strong>Export to calendar</strong> opens a dialog to pick the week range and courses first. On Android,
+            open the downloaded file with Google Calendar, or import it on desktop — it then syncs to your phone.
+          </p>
+        </div>
+
+        <div class="datagroup">
+          <div class="datagroup-title">Danger zone</div>
+          <div class="datagroup-btns">
+            <button class="btn danger" id="resetAll"><span aria-hidden="true">🗑️</span> Reset everything</button>
+          </div>
+        </div>
       </div>
-      <p class="hint" style="margin-top:14px">
-        <strong>Share link</strong> is the easy way: it copies a link that carries your whole course list — send it
-        to a friend and, when they open it, they're asked whether to load your plan. For a file instead, use
-        <strong>Export course list (JSON)</strong> and let the other person import it.
-      </p>
-      <p class="hint" style="margin-top:6px">
-        Calendar import: “Export to calendar” opens a dialog where you pick the week range and courses first. On
-        Android, open the downloaded file with the Google Calendar app, or import it into Google Calendar on
-        desktop — it then syncs to your phone automatically.
-      </p>
     </div>
 
     <div class="note schedule-note" style="margin-top:20px">
@@ -293,7 +322,7 @@ School of Economics and Management
 </div>
 
 <div class="modal-overlay" id="xlsModalOverlay" hidden>
-  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="xlsModalTitle">
+  <div class="modal modal-xls" role="dialog" aria-modal="true" aria-labelledby="xlsModalTitle">
     <h3 id="xlsModalTitle">Import schedule (.xls)</h3>
     <p class="hint">Export your timetable from the course system, then load the file here. Under
       <b>Function menu → Course registration information query → Class schedule inquiry</b>, click
@@ -315,9 +344,12 @@ School of Economics and Management
       <span class="hint" id="xlsFileName">No file chosen</span>
     </div>
 
-    <p class="hint hint-block">The XLS only stores each course's <b>title, room, weekday and block</b> — not the
-      week range, course number, instructor or credits. Imported courses come in as <b>Option</b> with weeks
-      set to <code class="k">1-16</code>; adjust them afterwards where needed.</p>
+    <div class="note warn xls-warn">
+      <h3>⚠️ Double-check weeks &amp; credits</h3>
+      Weeks are read from the file when it lists them (e.g. <code class="k">(week 1-8)</code>); otherwise a course
+      defaults to <code class="k">1-16</code>. Credits, course number and instructor aren't in the export at all.
+      Set the correct <b>Weeks</b> and <b>CP</b> below before adding — or fix them later in the course list.
+    </div>
 
     <div class="preview" id="xlsPreview"></div>
 

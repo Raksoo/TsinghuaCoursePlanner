@@ -130,8 +130,13 @@ function importFromHash(){
   history.replaceState(null, "", location.pathname + location.search);
 }
 
-function resetToStartingCourses(){
-  if(confirm("Replace all courses with the four starting courses?")){
-    state.courses = seedCourses(); save(); renderAll(); toast("Reset done");
+function resetEverything(){
+  if(confirm("Reset everything? This clears all your courses and settings in this browser and cannot be undone.")){
+    state.courses = [];
+    state.goal = 0;
+    state.visible = {booked:true, bid:true, option:true, out:false};
+    state.week = currentSemesterWeek().week;
+    save(); renderWeekSelect(); renderAll();
+    toast("Everything reset");
   }
 }

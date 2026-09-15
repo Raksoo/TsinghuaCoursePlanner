@@ -44,15 +44,25 @@ function init(){
   $("#search").addEventListener("input", renderTable);
   $("#listStatusFilter").addEventListener("change", renderTable);
 
+  const listHead = document.querySelector("#panel-list thead");
+  if(listHead) listHead.addEventListener("click", e=>{
+    const th = e.target.closest("th.sortable"); if(!th) return;
+    const key = th.dataset.sort;
+    if(listSort.key === key) listSort.dir *= -1;
+    else { listSort.key = key; listSort.dir = 1; }
+    renderTable();
+  });
+
   $("#parseBtn").addEventListener("click", ()=>{
     const txt = $("#pasteBox").value;
     if(!txt.trim()){ toast("Paste the course rows first"); return; }
     activePreviewHost = "#parsePreview";
+    pendingEditableWeeks = false;
     pending = parsePaste(txt);
     if(!pending.length){ toast("Nothing recognised — paste the fields on separate lines"); }
     renderPreview();
   });
-  $("#clearPaste").addEventListener("click", ()=>{ $("#pasteBox").value = ""; activePreviewHost = "#parsePreview"; pending = []; renderPreview(); });
+  $("#clearPaste").addEventListener("click", ()=>{ $("#pasteBox").value = ""; activePreviewHost = "#parsePreview"; pendingEditableWeeks = false; pending = []; renderPreview(); });
 
   // A help screenshot is optional: reveal it only once it actually loads
   // (also covers a cached image that finishes before this listener attaches),
@@ -82,6 +92,7 @@ function init(){
     r.onload = () => {
       try{
         activePreviewHost = "#xlsPreview";
+        pendingEditableWeeks = true;
         pending = parseScheduleXLS(r.result);
         renderPreview();
         toast(pending.length ? pending.length+(pending.length===1?" course read from the schedule":" courses read from the schedule")
@@ -91,11 +102,26 @@ function init(){
     r.readAsArrayBuffer(f);
   });
 
+  const statusInfoBtn = $("#statusInfoBtn"), statusInfo = $("#statusInfo");
+  if(statusInfoBtn && statusInfo){
+    statusInfoBtn.addEventListener("click", ()=>{
+      const show = statusInfo.hidden;
+      statusInfo.hidden = !show;
+      statusInfoBtn.setAttribute("aria-expanded", show ? "true" : "false");
+    });
+    document.addEventListener("click", e=>{
+      if(!statusInfo.hidden && !statusInfo.contains(e.target) && !statusInfoBtn.contains(e.target)){
+        statusInfo.hidden = true; statusInfoBtn.setAttribute("aria-expanded","false");
+      }
+    });
+  }
+
   $("#addSlot").addEventListener("click", ()=>addSlotRow());
 
   $("#saveCourse").addEventListener("click", ()=>{
     const c = readForm();
     if(!c.titleEn && !c.titleCn){ toast("A title is needed"); return; }
+    if(!(c.credits > 0)){ toast("Enter the course's credits"); return; }
     if(!c.slots.length){ toast("At least one valid meeting is needed"); return; }
     const i = state.courses.findIndex(x=>x.id===c.id);
     if(i>=0) state.courses[i] = c; else state.courses.push(c);
@@ -148,7 +174,7 @@ function init(){
     renderPrintSheet();
     setTimeout(()=>window.print(), 120);
   });
-  $("#resetAll").addEventListener("click", resetToStartingCourses);
+  $("#resetAll").addEventListener("click", resetEverything);
 
   $("#nowBadge").addEventListener("click", ()=>{
     const info = currentSemesterWeek();
@@ -162,6 +188,8 @@ function init(){
     if(!$("#icsModalOverlay").hidden) closeICSModal();
     if(!$("#pasteModalOverlay").hidden) closePasteModal();
     if(!$("#xlsModalOverlay").hidden) closeXlsModal();
+    const si = $("#statusInfo");
+    if(si && !si.hidden){ si.hidden = true; $("#statusInfoBtn").setAttribute("aria-expanded","false"); }
   });
 
   // Keep the "now" badge correct even if the tab is left open across midnight.

@@ -4,6 +4,33 @@
    Course list (active courses only — dropped courses live in the
    archive, see archive.js)
    ============================================================ */
+let listSort = { key:null, dir:1 };   // null = default (status, then time)
+
+/* Comparable value for a column; numbers sort numerically, strings A→Z. */
+function sortValue(c, key){
+  switch(key){
+    case "status":     return {booked:0, bid:1, option:2, out:3}[c.status];
+    case "course":     return (c.titleEn || c.titleCn || "").toLowerCase();
+    case "number":     return (c.number || "") + (c.seq ? "-"+c.seq : "");
+    case "instructor": return (c.instructor || "").toLowerCase();
+    case "time":       { const s = c.slots[0] || {}; return (s.day || 9) * 10000 + toMin(s.start || "00:00"); }
+    case "weeks":      { const w = parseWeeks(c.weeks); return w[0] || 99; }
+    case "credits":    return parseFloat(c.credits) || 0;
+    case "room":       return (c.room || "").toLowerCase();
+  }
+  return 0;
+}
+function sortCmp(a, b){
+  return (typeof a === "number" && typeof b === "number") ? a - b : String(a).localeCompare(String(b));
+}
+function updateSortHeaders(){
+  document.querySelectorAll("#panel-list thead th.sortable").forEach(th=>{
+    const active = th.dataset.sort === listSort.key;
+    th.classList.toggle("sorted", active);
+    th.dataset.dir = active ? (listSort.dir > 0 ? "asc" : "desc") : "";
+  });
+}
+
 /* Delete straight away, but offer a few seconds to undo (friendlier than a
    confirm dialog on every click). Keeps the original position for the undo. */
 function deleteCourseWithConfirm(id){
@@ -40,12 +67,19 @@ function renderTable(){
     if(!q) return true;
     return [c.titleEn,c.titleCn,c.instructor,c.number,c.dept,c.room].join(" ").toLowerCase().includes(q);
   }).sort((a,b)=>{
+    if(listSort.key){
+      const d = sortCmp(sortValue(a, listSort.key), sortValue(b, listSort.key));
+      if(d) return d * listSort.dir;
+      return sortCmp(sortValue(a,"course"), sortValue(b,"course")); // stable tiebreak
+    }
     const order = {booked:0, bid:1, option:2, out:3};
     if(order[a.status]!==order[b.status]) return order[a.status]-order[b.status];
     const da=(a.slots[0]||{}).day||9, db=(b.slots[0]||{}).day||9;
     if(da!==db) return da-db;
     return toMin((a.slots[0]||{start:"00:00"}).start) - toMin((b.slots[0]||{start:"00:00"}).start);
   });
+
+  updateSortHeaders();
 
   if(!rows.length){
     const tr = el("tr"); const td = el("td", null, "No courses match.");
@@ -79,7 +113,7 @@ function renderTable(){
     if(c.note) tdT.appendChild(el("span","cn", "› "+c.note));
     tr.appendChild(tdT);
 
-    tr.appendChild(el("td","num", c.number + (c.seq? "-"+c.seq : "")));
+    tr.appendChild(el("td","num", (c.number||"—") + (c.seq? "-"+c.seq : "")));
     tr.appendChild(el("td", null, c.instructor||"—"));
     tr.appendChild(el("td","num", slotText(c)));
 

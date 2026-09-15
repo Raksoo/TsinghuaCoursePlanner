@@ -121,12 +121,21 @@ function _parseSST(segs, cstUnique){
   return out;
 }
 
-/* ---- "Machine Learning(六教-6A216)" → {title, room} ---- */
-function _splitTitleRoom(text){
-  text = String(text).replace(/\s+/g," ").trim();
-  const m = text.match(/[（(]([^（）()]*)[）)]\s*$/);
-  if(m) return { title: text.slice(0,m.index).trim(), room: m[1].trim() };
-  return { title: text, room: "" };
+/* ---- Split one cell into {title, room, weeks}.
+   Cells look like  "Title(room) (week 1-8)"  — the room is one
+   parenthesised group and the week range is a separate
+   "(week …)" group. Either may be missing (e.g. no week). ---- */
+function _parseCell(text){
+  text = String(text).replace(/\s+/g, " ").trim();
+  let weeks = "";
+  // pull out a "(week 1-8)" / "(周 1-8)" group wherever it sits
+  const wm = text.match(/[（(]\s*(?:weeks?|周)\s*([0-9,\s\-–~]+)[）)]/i);
+  if(wm){ weeks = wm[1].replace(/\s+/g, ""); text = (text.slice(0, wm.index) + text.slice(wm.index + wm[0].length)).trim(); }
+  // the remaining trailing parenthesised group is the room
+  let room = "";
+  const rm = text.match(/[（(]([^（）()]*)[）)]\s*$/);
+  if(rm){ room = rm[1].trim(); text = text.slice(0, rm.index).trim(); }
+  return { title: text, room, weeks };
 }
 
 /* ---- grid entries → courses (merge consecutive blocks on the same day) ---- */
@@ -134,8 +143,10 @@ function _entriesToCourses(entries){
   const groups = new Map();
   entries.forEach(e=>{
     const key = e.title+"||"+e.room;
-    if(!groups.has(key)) groups.set(key, {title:e.title, room:e.room, cells:[]});
-    groups.get(key).cells.push({day:e.day, block:e.block});
+    if(!groups.has(key)) groups.set(key, {title:e.title, room:e.room, weeks:"", cells:[]});
+    const g = groups.get(key);
+    if(!g.weeks && e.weeks) g.weeks = e.weeks;   // first week range found for this course
+    g.cells.push({day:e.day, block:e.block});
   });
   const courses=[];
   groups.forEach(g=>{
@@ -154,8 +165,8 @@ function _entriesToCourses(entries){
     });
     courses.push({
       id: uid(), titleEn:g.title, titleCn:"", number:"", seq:"", credits:0,
-      instructor:"", dept:"", lang:"", room:g.room, weeks:"1-16", status:"option",
-      note:"Imported from schedule XLS — the export carries no week range; check the Weeks field.",
+      instructor:"", dept:"", lang:"", room:g.room, weeks:(g.weeks || "1-16"), status:"option",
+      note:"Imported from schedule XLS — check the Weeks field"+(g.weeks ? "" : " (no week range in the file)")+".",
       slots
     });
   });
@@ -212,7 +223,7 @@ function parseScheduleXLS(arrayBuffer){
     const row = cells[+ri] || [];
     Object.keys(dayCol).forEach(ci=>{
       const v = row[+ci];
-      if(v && String(v).trim()){ const {title,room} = _splitTitleRoom(v); entries.push({ day:dayCol[+ci], block:blockOfRow[+ri], title:title||String(v).trim(), room }); }
+      if(v && String(v).trim()){ const {title,room,weeks} = _parseCell(v); entries.push({ day:dayCol[+ci], block:blockOfRow[+ri], title:title||String(v).trim(), room, weeks }); }
     });
   });
   return _entriesToCourses(entries);

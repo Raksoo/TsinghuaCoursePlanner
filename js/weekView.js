@@ -95,29 +95,37 @@ function renderGrid(){
     });
 
     const dayEv = events.filter(ev=>ev.day===d).sort((a,b)=>a.s-b.s || a.e-b.e);
-    const cols = [];
+    // Greedy column assignment (a column is reused once its last event ends).
+    const colEnds = [];
     dayEv.forEach(ev=>{
       let placed = false;
-      for(let i=0;i<cols.length;i++){
-        if(cols[i][cols[i].length-1].e <= ev.s){ cols[i].push(ev); ev._col = i; placed = true; break; }
-      }
-      if(!placed){ cols.push([ev]); ev._col = cols.length-1; }
+      for(let i=0;i<colEnds.length;i++){ if(colEnds[i] <= ev.s){ ev._col = i; colEnds[i] = ev.e; placed = true; break; } }
+      if(!placed){ ev._col = colEnds.length; colEnds.push(ev.e); }
     });
-    const nCols = Math.max(cols.length,1);
+    // Column count is per overlap-cluster, so a course that doesn't actually
+    // overlap anything keeps the full day width even if other blocks are split.
+    for(let i=0;i<dayEv.length;){
+      let j=i, end=dayEv[i].e, maxCol=dayEv[i]._col;
+      while(j+1<dayEv.length && dayEv[j+1].s < end){ j++; end=Math.max(end, dayEv[j].e); maxCol=Math.max(maxCol, dayEv[j]._col); }
+      const ncol = maxCol+1;
+      for(let k=i;k<=j;k++) dayEv[k]._ncol = ncol;
+      i = j+1;
+    }
 
     dayEv.forEach(ev=>{
       const c = ev.course;
       const node = el("div","ev "+c.status+(clashIds.has(c.id)?" clash":""));
-      const w = 100/nCols;
+      const w = 100/ev._ncol;
       node.style.left = "calc("+(ev._col*w)+"% + 4px)";
       node.style.width = "calc("+w+"% - 8px)";
       node.style.top = ((ev.s-minM)*PPM)+"px";
       node.style.height = Math.max((ev.e-ev.s)*PPM - 4, 26)+"px";
       node.appendChild(el("span","t", c.titleEn || c.titleCn));
-      node.appendChild(el("span","m", ev.start+"–"+ev.end + (ev.block?" · Block "+ev.block:"")));
+      node.appendChild(el("span","m", ev.start+"–"+ev.end));
       if(c.room) node.appendChild(el("span","m", c.room));
-      node.appendChild(el("span","m", c.credits+" CP · "+statusLabel(c.status)));
-      node.title = (c.titleEn||"")+"\n"+(c.titleCn||"")+"\n"+ev.start+"–"+ev.end+"\nWeeks "+c.weeks+(c.note?"\n"+c.note:"");
+      node.appendChild(el("span","m", c.credits+" CP"));
+      if(week==="all") node.appendChild(el("span","m wk", "Weeks "+(c.weeks||"—")));
+      node.title = (c.titleEn||"")+"\n"+(c.titleCn||"")+"\n"+ev.start+"–"+ev.end+"\nWeeks "+c.weeks+" · "+statusLabel(c.status)+(c.note?"\n"+c.note:"");
       node.tabIndex = 0;
       node.addEventListener("click", ()=>editCourse(c.id));
       node.addEventListener("keydown", e=>{ if(e.key==="Enter") editCourse(c.id); });

@@ -80,7 +80,7 @@ function fillForm(c){
   if(lead){
     lead.textContent = c
       ? "Editing “"+(c.titleEn||c.titleCn||"this course")+"”. Change anything below, then Save course — or Delete course to remove it."
-      : "Enter a course by hand. Only a title and one meeting time are required; everything else is optional. Already have one? Click any course in the Course list to edit it here — or use the buttons on the right to import.";
+      : "Enter a course by hand. Only a title, its credits, and one meeting time are required; everything else is optional. Already have one? Click any course in the Course list to edit it here — or use the buttons on the right to import.";
   }
 }
 
@@ -143,6 +143,7 @@ function closeImportModals(){ closePasteModal(); closeXlsModal(); }
    ============================================================ */
 let pending = [];
 let activePreviewHost = "#parsePreview";   // set by whichever source filled `pending`
+let pendingEditableWeeks = false;          // .xls import: weeks aren't in the file, let the user fill them here
 function renderPreview(){
   const host = $(activePreviewHost);
   if(!host) return;
@@ -153,7 +154,9 @@ function renderPreview(){
   note.appendChild(el("h3", null, pending.length+(pending.length===1?" course found":" courses found")));
   const tbl = el("table"); tbl.style.minWidth = "0";
   const thead = el("thead");
-  thead.innerHTML = "<tr><th style='width:34px'></th><th>Course</th><th style='width:110px'>Time</th><th style='width:75px'>Weeks</th><th style='width:55px'>CP</th></tr>";
+  const weeksHead = pendingEditableWeeks ? "Weeks ⚠" : "Weeks";
+  const cpHead = pendingEditableWeeks ? "CP ⚠" : "CP";
+  thead.innerHTML = "<tr><th style='width:30px'></th><th>Course</th><th style='width:120px'>Time</th><th style='width:92px'>"+weeksHead+"</th><th style='width:62px'>"+cpHead+"</th></tr>";
   tbl.appendChild(thead);
   const tb = el("tbody");
   pending.forEach((c,i)=>{
@@ -163,11 +166,28 @@ function renderPreview(){
     tdC.appendChild(cb); tr.appendChild(tdC);
     const tdT = el("td");
     tdT.appendChild(el("span","title", c.titleEn || c.titleCn || "(no title)"));
-    tdT.appendChild(el("span","cn", [c.titleCn, c.number, c.instructor, c.dept].filter(Boolean).join(" · ")));
+    const sub = [c.titleCn, c.number, c.instructor, c.dept, c.room].filter(Boolean).join(" · ");
+    if(sub) tdT.appendChild(el("span","cn", sub));
     tr.appendChild(tdT);
-    tr.appendChild(el("td","num", slotText(c)));
-    tr.appendChild(el("td","num", c.weeks));
-    tr.appendChild(el("td","num", c.credits+""));
+    tr.appendChild(el("td","prev-time", slotText(c)));
+    if(pendingEditableWeeks){
+      const tdW = el("td");
+      const inp = document.createElement("input");
+      inp.type = "text"; inp.className = "prev-weeks"; inp.value = c.weeks;
+      inp.setAttribute("aria-label", "Weeks for "+(c.titleEn || c.titleCn || "course"));
+      inp.addEventListener("input", ()=>{ c.weeks = inp.value.trim() || "1-16"; });
+      tdW.appendChild(inp); tr.appendChild(tdW);
+
+      const tdCP = el("td");
+      const cpInp = document.createElement("input");
+      cpInp.type = "number"; cpInp.step = "0.5"; cpInp.min = "0"; cpInp.className = "prev-cp"; cpInp.value = c.credits || "";
+      cpInp.setAttribute("aria-label", "Credits for "+(c.titleEn || c.titleCn || "course"));
+      cpInp.addEventListener("input", ()=>{ c.credits = parseFloat(cpInp.value) || 0; });
+      tdCP.appendChild(cpInp); tr.appendChild(tdCP);
+    } else {
+      tr.appendChild(el("td","num", c.weeks));
+      tr.appendChild(el("td","num", c.credits+""));
+    }
     tb.appendChild(tr);
   });
   tbl.appendChild(tb);
