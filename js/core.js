@@ -11,6 +11,23 @@ const BLOCKS = [
   {n:5, start:"17:05", end:"18:40"},
   {n:6, start:"19:20", end:"21:45"}
 ];
+/* Official Tsinghua timetable: the six blocks (大节) and their sub-sections
+   (小节), grouped by morning/afternoon/evening. Reference display only —
+   the app schedules by block (see BLOCKS above). */
+const CLASS_SCHEDULE = [
+  { period:"Morning", cn:"上午", blocks:[
+    { n:1, cn:"第一大节", subs:[ {n:1,t:"08:00–08:45"}, {n:2,t:"08:50–09:35"} ] },
+    { n:2, cn:"第二大节", subs:[ {n:3,t:"09:50–10:35"}, {n:4,t:"10:40–11:25"}, {n:5,t:"11:30–12:15"} ] }
+  ]},
+  { period:"Afternoon", cn:"下午", blocks:[
+    { n:3, cn:"第三大节", subs:[ {n:6,t:"13:30–14:15"}, {n:7,t:"14:20–15:05"} ] },
+    { n:4, cn:"第四大节", subs:[ {n:8,t:"15:20–16:05"}, {n:9,t:"16:10–16:55"} ] },
+    { n:5, cn:"第五大节", subs:[ {n:10,t:"17:05–17:50"}, {n:11,t:"17:55–18:40"} ] }
+  ]},
+  { period:"Evening", cn:"晚上", blocks:[
+    { n:6, cn:"第六大节", subs:[ {n:12,t:"19:20–20:05"}, {n:13,t:"20:10–20:55"}, {n:14,t:"21:00–21:45"} ] }
+  ]}
+];
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 const DAYS_SHORT = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];

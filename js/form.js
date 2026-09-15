@@ -99,11 +99,37 @@ function readForm(){
 }
 
 /* ============================================================
-   Paste preview
+   Paste-from-course-system modal
+   ============================================================ */
+function openPasteModal(){
+  const ov = $("#pasteModalOverlay");
+  if(!ov) return;
+  ov.hidden = false;
+  const box = $("#pasteBox");
+  if(box) setTimeout(()=>box.focus(), 30);
+}
+function closePasteModal(){
+  const ov = $("#pasteModalOverlay");
+  if(ov) ov.hidden = true;
+}
+function openXlsModal(){
+  const ov = $("#xlsModalOverlay");
+  if(ov) ov.hidden = false;
+}
+function closeXlsModal(){
+  const ov = $("#xlsModalOverlay");
+  if(ov) ov.hidden = true;
+}
+function closeImportModals(){ closePasteModal(); closeXlsModal(); }
+
+/* ============================================================
+   Preview shared by the paste modal and the .xls import modal
    ============================================================ */
 let pending = [];
+let activePreviewHost = "#parsePreview";   // set by whichever source filled `pending`
 function renderPreview(){
-  const host = $("#parsePreview");
+  const host = $(activePreviewHost);
+  if(!host) return;
   host.innerHTML = "";
   if(!pending.length) return;
 
@@ -144,10 +170,10 @@ function renderPreview(){
       if(dup){ skipped++; return; }
       state.courses.push(c); added++;
     });
-    pending = []; $("#pasteBox").value = ""; renderPreview();
+    pending = []; const pb = $("#pasteBox"); if(pb) pb.value = ""; renderPreview();
     save(); renderAll();
     toast(added+(added===1?" course added":" courses added")+(skipped?", "+skipped+" skipped as duplicate":""));
-    if(added) showPanel("week"); // feature: land on the week view after adding
+    if(added){ closeImportModals(); showPanel("week"); } // feature: land on the week view after adding
   });
   const cancel = el("button","btn ghost","Discard");
   cancel.addEventListener("click", ()=>{ pending = []; renderPreview(); });

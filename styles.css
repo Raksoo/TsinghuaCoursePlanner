@@ -124,6 +124,26 @@ textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Men
 .note ul{margin:6px 0 0;padding-left:18px}
 .note li{margin:3px 0}
 
+/* Official Tsinghua timetable (Data & sharing tab) */
+.schedule-table-wrap{overflow-x:auto;margin-top:12px;border:1px solid var(--line);border-radius:10px}
+table.schedule-table{min-width:0;width:100%;border-collapse:collapse;font-size:13px}
+table.schedule-table th{
+  background:var(--purple-soft);color:var(--purple);font-weight:640;font-size:12px;
+  text-transform:none;letter-spacing:0;position:static;padding:8px 12px;text-align:left;
+  border-bottom:1px solid var(--line-strong);
+}
+table.schedule-table td{padding:7px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.schedule-table tbody tr:last-child td{border-bottom:0}
+table.schedule-table tbody tr:hover{background:transparent}
+table.schedule-table tr.block-start > td{border-top:1px solid var(--line-strong)}
+table.schedule-table tbody tr:first-child.block-start > td{border-top:0}
+.schedule-table .sch-period{background:#f6f2f8;white-space:nowrap;border-right:1px solid var(--line)}
+.schedule-table .sch-block{background:#fbf9fc;white-space:nowrap;border-right:1px solid var(--line)}
+.schedule-table .sch-period b,.schedule-table .sch-block b{display:block;font-weight:640;color:var(--ink)}
+.schedule-table .sch-period span,.schedule-table .sch-block span{display:block;color:var(--muted);font-size:11.5px}
+.schedule-table .sch-sub{color:var(--muted);font-variant-numeric:tabular-nums}
+.schedule-table .sch-time{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:560;color:var(--ink)}
+
 /* ---------- Table ---------- */
 .tablewrap{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:1020px}
@@ -168,17 +188,27 @@ select.statussel.out{background:var(--s-out-bg);border-color:var(--s-out);color:
 .formactions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center}
 .hint{font-size:12.5px;color:var(--muted)}
 .preview{margin-top:14px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.two.two-uneven{grid-template-columns:minmax(260px,0.85fr) 1.15fr}
-@media(max-width:900px){.two{grid-template-columns:1fr}}
 
-/* Collapsible paste-parser panel (kept compact; the edit/add form is primary) */
-.paste-details{border:0}
-.paste-details > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.paste-details > summary::-webkit-details-marker{display:none}
-.paste-details > summary::before{content:"\25B8";display:inline-block;color:var(--muted);font-size:14px;transition:transform .15s}
-.paste-details[open] > summary::before{transform:rotate(90deg)}
-.form-compact textarea{min-height:96px}
+/* Add / edit header: title + lead on the left, the paste button on the right */
+.add-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.add-head .lead{margin-bottom:2px}
+.add-import-btns{display:flex;gap:8px;flex-wrap:wrap;flex:none}
+.paste-open{white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+.paste-open span[aria-hidden]{font-size:15px;line-height:1}
+@media(max-width:640px){ .add-import-btns{width:100%} .paste-open{flex:1;justify-content:center} }
+
+/* Paste modal: screenshot help + textarea */
+.paste-help{margin:6px 0 16px}
+.paste-help img[hidden]{display:none}
+.paste-help img{display:block;width:100%;border:1px solid var(--line);border-radius:10px}
+.paste-help-placeholder[hidden]{display:none}
+.paste-help-placeholder{
+  border:2px dashed var(--line-strong);border-radius:10px;background:var(--purple-soft);
+  padding:22px 20px;text-align:center;color:var(--muted);
+  display:flex;flex-direction:column;gap:6px;line-height:1.5;
+}
+.paste-help-placeholder strong{color:var(--ink);font-size:13.5px}
+.paste-body textarea{min-height:150px}
 
 .hint-block{margin:10px 0 0;padding:8px 11px;background:var(--purple-soft);border-radius:8px}
 code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
@@ -198,6 +228,7 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
   background:var(--card);border-radius:14px;max-width:560px;width:100%;
   max-height:88vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(28,20,36,.35);
 }
+.modal.modal-wide{max-width:640px}
 .modal h3{margin:0 0 4px;font-size:17px;font-weight:650}
 .modal-section{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .modal-section:first-of-type{border-top:0;margin-top:14px;padding-top:0}

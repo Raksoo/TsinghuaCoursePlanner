@@ -97,38 +97,24 @@
 
   <!-- ============ ADD COURSES ============ -->
   <section class="panel" id="panel-add">
-    <div class="two two-uneven">
-      <div>
-        <details class="paste-details" open>
-          <summary><h2 style="display:inline">Paste from the course system</h2></summary>
-          <p class="lead">Paste the lines of a course row from the Tsinghua system — stacked or as a table row.
-            Separate several courses with a blank line. The time format
-            <code class="k">2-6(week 1-16)</code> is read as weekday&#8209;block.</p>
-          <div class="form form-compact">
-            <textarea id="pasteBox" spellcheck="false" placeholder="Accounting Principles
-会计学原理
-30510123
-1
-3
-School of Economics and Management
-张海燕
-2-6(week 1-16)"></textarea>
-            <div class="formactions">
-              <button class="btn" id="parseBtn">Read courses</button>
-              <button class="btn ghost" id="clearPaste">Clear field</button>
-              <span class="hint">You get a preview before anything is saved.</span>
-            </div>
-            <div class="preview" id="parsePreview"></div>
-          </div>
-        </details>
-      </div>
-
+    <div class="add-head">
       <div>
         <h2 id="formTitle">Add a course manually</h2>
         <p class="lead" id="formLead">For courses with fixed times instead of a block code — such as the SEM
           electives from the MBA schedule (8:00–11:25, 13:30–16:55, 19:00–22:00). This same form is used to edit
           an existing course — click any course in the Course list to open it here.</p>
-        <div class="form">
+      </div>
+      <div class="add-import-btns">
+        <button class="btn ghost paste-open" id="openPasteBtn" type="button">
+          <span aria-hidden="true">📋</span> Paste from the course system
+        </button>
+        <button class="btn ghost paste-open" id="openXlsBtn" type="button">
+          <span aria-hidden="true">📄</span> Import schedule (.xls)
+        </button>
+      </div>
+    </div>
+
+    <div class="form">
           <input type="hidden" id="fId">
           <div class="formgrid">
             <label class="field"><span>Title (English)</span><input type="text" id="fTitleEn"></label>
@@ -176,8 +162,6 @@ School of Economics and Management
             <button class="btn danger" id="deleteCourse" style="display:none">Delete course</button>
           </div>
         </div>
-      </div>
-    </div>
   </section>
 
   <!-- ============ DATA ============ -->
@@ -206,9 +190,12 @@ School of Economics and Management
       </p>
     </div>
 
-    <div class="note" style="margin-top:20px">
-      <h3>Tsinghua time blocks</h3>
-      <ul id="blockLegend"></ul>
+    <div class="note schedule-note" style="margin-top:20px">
+      <h3>Tsinghua class times</h3>
+      <p class="hint" style="margin:2px 0 0">The planner groups each day into the six official Tsinghua blocks
+        (大节). A block spans the shorter sub-sections (小节) shown below; the app places courses by block.</p>
+      <div class="schedule-table-wrap" id="scheduleTable"></div>
+      <p class="hint" id="blockCodeHint" style="margin-top:12px"></p>
     </div>
   </section>
 </main>
@@ -253,6 +240,83 @@ School of Economics and Management
   </div>
 </div>
 
+<div class="modal-overlay" id="pasteModalOverlay" hidden>
+  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="pasteModalTitle">
+    <h3 id="pasteModalTitle">Paste from the course system</h3>
+    <p class="hint">On the <b>Course Selection Website → Function menu → Course registration</b>, mark a course
+      row as shown below and paste it in here. The fields can be stacked on separate lines or come as one
+      tab&#8209;separated table row; separate several courses with a blank line. A time like
+      <code class="k">2-6(week 1-16)</code> is read as weekday&#8209;block.</p>
+
+    <div class="paste-help">
+      <img id="pasteHelpImg" src="assets/highlight_course.png"
+           alt="Mark a course row in the Tsinghua course registration list, then copy it" hidden>
+      <div class="paste-help-placeholder" id="pasteHelpPlaceholder">
+        <strong>Screenshot goes here</strong>
+        <span>Save a screenshot that shows how to mark and copy a course row as
+          <code class="k">assets/highlight_course.png</code> next to <code class="k">index.html</code> — it then
+          appears here automatically.</span>
+      </div>
+    </div>
+
+    <div class="paste-body">
+      <textarea id="pasteBox" spellcheck="false" placeholder="Accounting Principles
+会计学原理
+30510123
+1
+3
+School of Economics and Management
+张海燕
+2-6(week 1-16)"></textarea>
+      <div class="formactions" style="margin-top:12px">
+        <button class="btn" id="parseBtn">Read courses</button>
+        <button class="btn ghost" id="clearPaste">Clear field</button>
+        <span class="hint">You get a preview before anything is saved.</span>
+      </div>
+      <div class="preview" id="parsePreview"></div>
+    </div>
+
+    <div class="formactions">
+      <button class="btn ghost" id="pasteModalClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="xlsModalOverlay" hidden>
+  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="xlsModalTitle">
+    <h3 id="xlsModalTitle">Import schedule (.xls)</h3>
+    <p class="hint">Export your timetable from the course system, then load the file here. Under
+      <b>Function menu → Course registration information query → Class schedule inquiry</b>, click
+      <b>Export to XLS</b> (step 2 below), then choose the downloaded file.</p>
+
+    <div class="paste-help">
+      <img id="xlsHelpImg" src="assets/export_schedule_xls.png"
+           alt="Function menu → Class schedule inquiry, then Export to XLS" hidden>
+      <div class="paste-help-placeholder" id="xlsHelpPlaceholder">
+        <strong>Screenshot goes here</strong>
+        <span>Save a screenshot of the export step as
+          <code class="k">assets/export_schedule_xls.png</code> next to <code class="k">index.html</code>.</span>
+      </div>
+    </div>
+
+    <div class="formactions" style="margin-top:4px">
+      <button class="btn" id="xlsPickBtn">Choose .xls file…</button>
+      <input type="file" id="xlsFile" accept=".xls,application/vnd.ms-excel" style="display:none">
+      <span class="hint" id="xlsFileName">No file chosen</span>
+    </div>
+
+    <p class="hint hint-block">The XLS only stores each course's <b>title, room, weekday and block</b> — not the
+      week range, course number, instructor or credits. Imported courses come in as <b>Option</b> with weeks
+      set to <code class="k">1-16</code>; adjust them afterwards where needed.</p>
+
+    <div class="preview" id="xlsPreview"></div>
+
+    <div class="formactions">
+      <button class="btn ghost" id="xlsModalClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/core.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/weekView.js"></script>
@@ -260,6 +324,7 @@ School of Economics and Management
 <script src="js/courseList.js"></script>
 <script src="js/archive.js"></script>
 <script src="js/form.js"></script>
+<script src="js/xlsImport.js"></script>
 <script src="js/icsExport.js"></script>
 <script src="js/printView.js"></script>
 <script src="js/dataShare.js"></script>

@@ -46,11 +46,49 @@ function init(){
   $("#parseBtn").addEventListener("click", ()=>{
     const txt = $("#pasteBox").value;
     if(!txt.trim()){ toast("Paste the course rows first"); return; }
+    activePreviewHost = "#parsePreview";
     pending = parsePaste(txt);
     if(!pending.length){ toast("Nothing recognised — paste the fields on separate lines"); }
     renderPreview();
   });
-  $("#clearPaste").addEventListener("click", ()=>{ $("#pasteBox").value = ""; pending = []; renderPreview(); });
+  $("#clearPaste").addEventListener("click", ()=>{ $("#pasteBox").value = ""; activePreviewHost = "#parsePreview"; pending = []; renderPreview(); });
+
+  // A help screenshot is optional: reveal it only once it actually loads
+  // (also covers a cached image that finishes before this listener attaches),
+  // otherwise the dashed placeholder stays.
+  function wireHelpImg(imgSel, phSel){
+    const img = $(imgSel); if(!img) return;
+    const reveal = ()=>{ img.hidden = false; const ph = $(phSel); if(ph) ph.hidden = true; };
+    img.addEventListener("load", reveal);
+    if(img.complete && img.naturalWidth > 0) reveal();
+  }
+  wireHelpImg("#pasteHelpImg", "#pasteHelpPlaceholder");
+  wireHelpImg("#xlsHelpImg", "#xlsHelpPlaceholder");
+
+  $("#openPasteBtn").addEventListener("click", openPasteModal);
+  $("#pasteModalClose").addEventListener("click", closePasteModal);
+  $("#pasteModalOverlay").addEventListener("click", e=>{ if(e.target.id==="pasteModalOverlay") closePasteModal(); });
+
+  $("#openXlsBtn").addEventListener("click", openXlsModal);
+  $("#xlsModalClose").addEventListener("click", closeXlsModal);
+  $("#xlsModalOverlay").addEventListener("click", e=>{ if(e.target.id==="xlsModalOverlay") closeXlsModal(); });
+  $("#xlsPickBtn").addEventListener("click", ()=>$("#xlsFile").click());
+  $("#xlsFile").addEventListener("change", e=>{
+    const f = e.target.files[0]; e.target.value = "";
+    if(!f) return;
+    $("#xlsFileName").textContent = f.name;
+    const r = new FileReader();
+    r.onload = () => {
+      try{
+        activePreviewHost = "#xlsPreview";
+        pending = parseScheduleXLS(r.result);
+        renderPreview();
+        toast(pending.length ? pending.length+(pending.length===1?" course read from the schedule":" courses read from the schedule")
+                             : "No courses found in that file");
+      }catch(err){ alert("This .xls could not be read: "+err.message); }
+    };
+    r.readAsArrayBuffer(f);
+  });
 
   $("#addSlot").addEventListener("click", ()=>addSlotRow());
   $("#applyCode").addEventListener("click", ()=>{
@@ -121,7 +159,10 @@ function init(){
   });
 
   document.addEventListener("keydown", e=>{
-    if(e.key==="Escape" && !$("#icsModalOverlay").hidden) closeICSModal();
+    if(e.key!=="Escape") return;
+    if(!$("#icsModalOverlay").hidden) closeICSModal();
+    if(!$("#pasteModalOverlay").hidden) closePasteModal();
+    if(!$("#xlsModalOverlay").hidden) closeXlsModal();
   });
 
   // Keep the "now" badge correct even if the tab is left open across midnight.
