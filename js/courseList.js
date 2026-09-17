@@ -31,12 +31,13 @@ function updateSortHeaders(){
   });
 }
 
-/* Delete straight away, but offer a few seconds to undo (friendlier than a
-   confirm dialog on every click). Keeps the original position for the undo. */
+/* Ask to confirm, then delete — and still offer a few seconds to undo.
+   Keeps the original position for the undo. */
 function deleteCourseWithConfirm(id){
   const idx = state.courses.findIndex(x=>x.id===id);
   if(idx<0) return;
   const c = state.courses[idx];
+  if(!confirm("Delete “"+(c.titleEn||c.titleCn||"this course")+"”?")) return;
   state.courses = state.courses.filter(x=>x.id!==id);
   save(); renderAll();
   toast("Deleted “"+(c.titleEn||c.titleCn||"course")+"”", "Undo", ()=>{

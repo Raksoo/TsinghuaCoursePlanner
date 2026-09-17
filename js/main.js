@@ -129,7 +129,17 @@ function init(){
     toast(i>=0 ? "Course updated" : "Course saved");
     showPanel("week"); // feature: land on the week view after saving
   });
-  $("#resetForm").addEventListener("click", ()=>fillForm(null));
+  $("#resetForm").addEventListener("click", ()=>{
+    const wasEditing = !!$("#fId").value;
+    fillForm(null);
+    if(wasEditing){
+      showPanel("week");                                   // "Cancel edit" → back to the week view
+      window.scrollTo({ top:0, behavior:"smooth" });
+    } else {
+      $("#formTitle").scrollIntoView({ block:"start", behavior:"smooth" });  // "Clear form" → back to the top of the form
+      $("#fTitleEn").focus({ preventScroll:true });
+    }
+  });
   $("#deleteCourse").addEventListener("click", ()=>{
     const id = $("#fId").value;
     if(id) deleteCourseWithConfirm(id);

@@ -76,6 +76,11 @@ function fillForm(c){
   else addSlotRow();
   $("#formTitle").textContent = c ? "Edit course" : "Add a course manually";
   $("#deleteCourse").style.display = c ? "inline-block" : "none";
+  const resetBtn = $("#resetForm");
+  if(resetBtn){
+    resetBtn.textContent = c ? "Cancel edit" : "Clear form";
+    resetBtn.title = c ? "Stop editing and empty the form (the saved course is not changed)" : "Empty all fields";
+  }
   const lead = $("#formLead");
   if(lead){
     lead.textContent = c
