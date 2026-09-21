@@ -48,12 +48,18 @@ function foldICSLine(line){
   return out;
 }
 
-/* opts: {courseIds, weekFrom, weekTo, includeChinese, travelMin} */
+/* opts: {courseIds, weekFrom, weekTo, includeChinese, inclInstructor, inclDept,
+          inclStatus, inclCredits, inclNote, travelMin} */
 function buildICS(opts){
   const courseIds = (opts && opts.courseIds) || new Set(state.courses.filter(isVisible).map(c=>c.id));
   const weekFrom = (opts && opts.weekFrom) || 1;
   const weekTo = (opts && opts.weekTo) || TOTAL_WEEKS;
   const includeChinese = !!(opts && opts.includeChinese);
+  const inclInstructor = !!(opts && opts.inclInstructor);
+  const inclDept = !!(opts && opts.inclDept);
+  const inclStatus = !!(opts && opts.inclStatus);
+  const inclCredits = !!(opts && opts.inclCredits);
+  const inclNote = !!(opts && opts.inclNote);
   const travelMin = (opts && opts.travelMin) || 0;
   const now = fmtICSDate(new Date());
   const lines = [
@@ -78,11 +84,11 @@ function buildICS(opts){
           const summary = icsEscape(c.titleEn || c.titleCn || "Course");
           const descParts = [
             includeChinese && c.titleCn ? "Chinese: "+c.titleCn : "",
-            c.instructor ? "Instructor: "+c.instructor : "",
-            c.dept || "",
-            "Status: "+statusLabel(c.status),
-            c.credits ? c.credits+" CP" : "",
-            c.note || ""
+            inclInstructor && c.instructor ? "Instructor: "+c.instructor : "",
+            inclDept && c.dept ? c.dept : "",
+            inclStatus ? "Status: "+statusLabel(c.status) : "",
+            inclCredits && c.credits ? c.credits+" CP" : "",
+            inclNote && c.note ? c.note : ""
           ].filter(Boolean);
           lines.push(foldICSLine("BEGIN:VEVENT"));
           lines.push(foldICSLine("UID:"+uidStr));

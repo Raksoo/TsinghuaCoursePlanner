@@ -27,6 +27,7 @@
       <button class="tab" role="tab" aria-selected="false" data-panel="list">Course list</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="add">Add / edit courses</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="data">Data &amp; sharing</button>
+      <button class="help-btn" id="helpBtn" type="button" title="How it works" aria-label="How it works">?</button>
     </div>
   </div>
 </header>
@@ -35,11 +36,18 @@
   <!-- ============ WEEK VIEW ============ -->
   <section class="panel active" id="panel-week">
     <div class="bar">
-      <label class="field">
+      <div class="field">
+        <span>View</span>
+        <div class="viewtoggle" id="viewToggle">
+          <button type="button" class="vt" data-view="week" aria-pressed="true">Single week</button>
+          <button type="button" class="vt" data-view="all" aria-pressed="false">All weeks · max load</button>
+        </div>
+      </div>
+      <label class="field" id="weekSelField">
         <span>Semester week</span>
         <select id="weekSel"></select>
       </label>
-      <div class="field">
+      <div class="field field-show">
         <span>Show on calendar</span>
         <div class="filters" id="statusFilters"></div>
       </div>
@@ -52,7 +60,7 @@
     </div>
     <p class="hint" style="margin-top:10px">
       Click a course to edit it. The grey bands are Tsinghua blocks 1–6; courses may run across block boundaries.
-      Pick <strong>“All weeks · combined”</strong> at the top of the week selector to overlay every course at once —
+      Switch to <strong>“All weeks · max load”</strong> above to overlay every course at once —
       useful for spotting the heaviest possible week, even for courses that only run part of the semester.
     </p>
   </section>
@@ -212,11 +220,13 @@
           <div class="datagroup-title">Calendar &amp; print</div>
           <div class="datagroup-btns">
             <button class="btn" id="icsExportBtn"><span aria-hidden="true">📅</span> Export to calendar (.ics)</button>
-            <button class="btn ghost" id="printBtn"><span aria-hidden="true">🖨️</span> Print week view</button>
+            <button class="btn ghost" id="printBtn"><span aria-hidden="true">🖨️</span> Print / export as PDF</button>
           </div>
           <p class="hint" style="margin:8px 0 0">
-            <strong>Export to calendar</strong> opens a dialog to pick the week range and courses first. On Android,
-            open the downloaded file with Google Calendar, or import it on desktop — it then syncs to your phone.
+            Both open a dialog to pick courses (and, for the calendar, the week range) first. On Android,
+            open the downloaded .ics file with Google Calendar, or import it on desktop — it then syncs to your phone.
+            Printing always renders a real timetable; “All weeks · max load” also labels each course with the
+            specific weeks it runs in, since overlapping cards there rarely all meet at once.
           </p>
         </div>
 
@@ -273,14 +283,23 @@
     </div>
 
     <div class="modal-section">
-      <div class="modal-section-head"><span>Options</span></div>
-      <label class="ics-opt">
-        <input type="checkbox" id="icsInclCn">
-        <span>Add the <b>Chinese course name</b> to the event notes (never in the title)</span>
-      </label>
+      <div class="modal-section-head"><span>Notes content</span></div>
+      <div class="chiprow">
+        <label class="chip"><input type="checkbox" id="icsInclInstructor" checked><span>Instructor</span></label>
+        <label class="chip"><input type="checkbox" id="icsInclDept"><span>Department</span></label>
+        <label class="chip"><input type="checkbox" id="icsInclStatus" checked><span>Status</span></label>
+        <label class="chip"><input type="checkbox" id="icsInclCredits" checked><span>Credits</span></label>
+        <label class="chip"><input type="checkbox" id="icsInclNote" checked><span>Personal note</span></label>
+        <label class="chip"><input type="checkbox" id="icsInclCn"><span>Chinese name</span></label>
+      </div>
+      <p class="hint" style="margin:6px 0 0">The event title is always the English course name — the Chinese name, if included above, only ever appears in the notes.</p>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-head"><span>Travel time</span></div>
       <label class="ics-opt">
         <input type="checkbox" id="icsTravel">
-        <span><b>Travel time</b> before each class —</span>
+        <span><b>Add travel time</b> before each class —</span>
         <select id="icsTravelMin" disabled>
           <option value="10">10 min</option>
           <option value="15" selected>15 min</option>
@@ -296,6 +315,30 @@
     <div class="formactions">
       <button class="btn" id="icsModalExport">Export .ics</button>
       <button class="btn ghost" id="icsModalCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="printModalOverlay" hidden>
+  <div class="modal modal-ics" role="dialog" aria-modal="true" aria-labelledby="printModalTitle">
+    <h3 id="printModalTitle">Print / export as PDF</h3>
+    <p class="hint">Printing <b id="printModalScope">—</b>. Switch <b>Single week</b> / <b>All weeks · max load</b>
+      at the top of the Week view to change what gets printed.</p>
+
+    <div class="modal-section">
+      <div class="modal-section-head">
+        <span>Courses</span>
+        <span class="modal-quick">
+          <button type="button" class="btn ghost small" id="printCoursesAll">Select all</button>
+          <button type="button" class="btn ghost small" id="printCoursesNone">Select none</button>
+        </span>
+      </div>
+      <div id="printCourseCheckboxes" class="ics-course-list"></div>
+    </div>
+
+    <div class="formactions">
+      <button class="btn" id="printModalPrint"><span aria-hidden="true">🖨️</span> Print / save as PDF</button>
+      <button class="btn ghost" id="printModalCancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -376,6 +419,23 @@ School of Economics and Management
 
     <div class="formactions">
       <button class="btn ghost" id="xlsModalClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="helpModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+    <h3 id="helpModalTitle">Welcome 👋 — quick start</h3>
+    <ul class="help-list">
+      <li>The courses shown are just <b>examples</b> — edit or delete them, then add your own.</li>
+      <li>Add your real plan under <b>Add / edit courses</b>: import the <b>.xls</b> from the THU Info portal, or paste a course row.</li>
+      <li>Switch to <b>All weeks · max load</b> (top of Week view) to see your heaviest possible week and catch clashes.</li>
+      <li><b>Export to your own calendar</b> (Apple / Google) via <b>Data &amp; sharing → Export to calendar (.ics)</b> — with travel time &amp; reminders.</li>
+      <li>Everything saves in your browser. Share your plan via <b>Data &amp; sharing → Copy share link</b>.</li>
+    </ul>
+    <div class="formactions">
+      <button class="btn" id="helpGotIt">Got it</button>
+      <span class="hint">Reopen anytime with the <b>?</b> button up top.</span>
     </div>
   </div>
 </div>

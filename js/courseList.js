@@ -35,15 +35,16 @@ function updateSortHeaders(){
    Keeps the original position for the undo. */
 function deleteCourseWithConfirm(id){
   const idx = state.courses.findIndex(x=>x.id===id);
-  if(idx<0) return;
+  if(idx<0) return false;
   const c = state.courses[idx];
-  if(!confirm("Delete “"+(c.titleEn||c.titleCn||"this course")+"”?")) return;
+  if(!confirm("Delete “"+(c.titleEn||c.titleCn||"this course")+"”?")) return false;
   state.courses = state.courses.filter(x=>x.id!==id);
   save(); renderAll();
   toast("Deleted “"+(c.titleEn||c.titleCn||"course")+"”", "Undo", ()=>{
     state.courses.splice(Math.min(idx, state.courses.length), 0, c);
     save(); renderAll(); toast("Deletion undone");
   });
+  return true;
 }
 
 /* Compact 1–18 week strip: filled cells mark the weeks a course runs. */

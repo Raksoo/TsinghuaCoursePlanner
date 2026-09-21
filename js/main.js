@@ -8,6 +8,12 @@ function showPanel(id){
   document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active", p.id==="panel-"+id));
 }
 
+function openHelp(){ const o = $("#helpModalOverlay"); if(o) o.hidden = false; }
+function closeHelp(){
+  const o = $("#helpModalOverlay"); if(o) o.hidden = true;
+  try{ localStorage.setItem("tsinghua-planner-seen-intro","1"); }catch(e){}   // don't auto-open again
+}
+
 function renderAll(){
   renderCredits();
   renderTable();
@@ -36,11 +42,22 @@ function init(){
 
   document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>showPanel(t.dataset.panel)));
 
-  $("#weekSel").addEventListener("change", e=>{
-    const v = e.target.value;
-    state.week = v === "all" ? "all" : +v;
-    save(); renderGrid();
+  document.querySelectorAll("#viewToggle .vt").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      state.week = b.dataset.view === "all" ? "all" : (+$("#weekSel").value || currentSemesterWeek().week);
+      save(); renderGrid(); syncViewControls();
+    });
   });
+  $("#weekSel").addEventListener("change", e=>{
+    state.week = +e.target.value;   // the dropdown only holds real weeks now
+    save(); renderGrid(); syncViewControls();
+  });
+
+  // Onboarding: quick-start modal, auto-opened once, reopenable via the "?" button.
+  try{ if(!localStorage.getItem("tsinghua-planner-seen-intro")) openHelp(); }catch(e){}
+  $("#helpBtn").addEventListener("click", openHelp);
+  $("#helpGotIt").addEventListener("click", closeHelp);
+  $("#helpModalOverlay").addEventListener("click", e=>{ if(e.target.id==="helpModalOverlay") closeHelp(); });
   $("#search").addEventListener("input", renderTable);
   $("#listStatusFilter").addEventListener("change", renderTable);
 
@@ -128,6 +145,7 @@ function init(){
     save(); renderAll(); fillForm(null);
     toast(i>=0 ? "Course updated" : "Course saved");
     showPanel("week"); // feature: land on the week view after saving
+    window.scrollTo({ top:0, behavior:"smooth" });
   });
   $("#resetForm").addEventListener("click", ()=>{
     const wasEditing = !!$("#fId").value;
@@ -142,8 +160,12 @@ function init(){
   });
   $("#deleteCourse").addEventListener("click", ()=>{
     const id = $("#fId").value;
-    if(id) deleteCourseWithConfirm(id);
+    const deleted = id && deleteCourseWithConfirm(id);
     fillForm(null);
+    if(deleted){
+      showPanel("week"); // feature: land on the week view after deleting
+      window.scrollTo({ top:0, behavior:"smooth" });
+    }
   });
 
   $("#goalInput").addEventListener("input", e=>{
@@ -180,13 +202,29 @@ function init(){
     const ok = downloadICS({
       courseIds: icsModalSelectedIds(), weekFrom, weekTo,
       includeChinese: $("#icsInclCn").checked,
+      inclInstructor: $("#icsInclInstructor").checked,
+      inclDept: $("#icsInclDept").checked,
+      inclStatus: $("#icsInclStatus").checked,
+      inclCredits: $("#icsInclCredits").checked,
+      inclNote: $("#icsInclNote").checked,
       travelMin: $("#icsTravel").checked ? (parseInt($("#icsTravelMin").value) || 0) : 0
     });
     if(ok) closeICSModal();
   });
 
-  $("#printBtn").addEventListener("click", ()=>{
-    renderPrintSheet();
+  $("#printBtn").addEventListener("click", openPrintModal);
+  $("#printModalCancel").addEventListener("click", closePrintModal);
+  $("#printModalOverlay").addEventListener("click", e=>{ if(e.target.id==="printModalOverlay") closePrintModal(); });
+  $("#printCoursesAll").addEventListener("click", ()=>{
+    document.querySelectorAll("#printCourseCheckboxes input[type=checkbox]").forEach(cb=>cb.checked=true);
+  });
+  $("#printCoursesNone").addEventListener("click", ()=>{
+    document.querySelectorAll("#printCourseCheckboxes input[type=checkbox]").forEach(cb=>cb.checked=false);
+  });
+  $("#printModalPrint").addEventListener("click", ()=>{
+    const opts = { courseIds: printModalSelectedIds() };
+    closePrintModal();
+    renderPrintSheet(opts);
     setTimeout(()=>window.print(), 120);
   });
   $("#resetAll").addEventListener("click", resetEverything);
@@ -201,8 +239,10 @@ function init(){
   document.addEventListener("keydown", e=>{
     if(e.key!=="Escape") return;
     if(!$("#icsModalOverlay").hidden) closeICSModal();
+    if(!$("#printModalOverlay").hidden) closePrintModal();
     if(!$("#pasteModalOverlay").hidden) closePasteModal();
     if(!$("#xlsModalOverlay").hidden) closeXlsModal();
+    if(!$("#helpModalOverlay").hidden) closeHelp();
     const si = $("#statusInfo");
     if(si && !si.hidden){ si.hidden = true; $("#statusInfoBtn").setAttribute("aria-expanded","false"); }
   });

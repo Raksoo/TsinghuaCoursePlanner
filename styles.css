@@ -53,6 +53,12 @@ header.top{background:var(--purple);color:#fff;padding:16px 28px 0}
 .tab:hover{background:rgba(255,255,255,.12);color:#fff}
 .tab[aria-selected="true"]{background:var(--paper);color:var(--purple);font-weight:640}
 .tab:focus-visible{outline:2px solid #fff;outline-offset:-3px}
+.help-btn{margin-left:auto;align-self:center;width:28px;height:28px;flex:none;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:15px;font-weight:700;cursor:pointer;line-height:1}
+.help-btn:hover{background:rgba(255,255,255,.26)}
+
+/* Quick-start modal list */
+.help-list{margin:6px 0 4px;padding-left:20px}
+.help-list li{margin:7px 0;font-size:13.5px;line-height:1.55}
 
 /* ---------- Layout ---------- */
 main{max-width:var(--wrap);margin:0 auto;padding:22px 28px 80px}
@@ -70,6 +76,32 @@ h2{font-size:17px;font-weight:640;letter-spacing:-0.01em;margin:0 0 4px}
 .field > span{font-size:12px;color:var(--muted);font-weight:560}
 /* Course-list filters: keep Search and Status the same size */
 #search,#listStatusFilter{width:230px;max-width:100%}
+/* Native <select> chrome renders a few px shorter than a text input even with
+   identical padding/border — replace it with a custom arrow so the Status
+   filter matches the Search field's box exactly. */
+#listStatusFilter{
+  -webkit-appearance:none;-moz-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 8l5 5 5-5' fill='none' stroke='%236f6479' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+  background-size:13px;
+  padding-right:30px;
+}
+.field[hidden]{display:none !important}
+
+/* Week view: Single-week vs. All-weeks·max-load segmented toggle */
+.viewtoggle{display:inline-flex;border:1px solid var(--line-strong);border-radius:9px;overflow:hidden}
+.viewtoggle .vt{background:#fff;border:0;padding:8px 13px;font-size:13px;font-weight:540;color:var(--muted);cursor:pointer;white-space:nowrap}
+.viewtoggle .vt + .vt{border-left:1px solid var(--line-strong)}
+.viewtoggle .vt[aria-pressed="true"]{background:var(--purple);color:#fff;font-weight:620}
+.viewtoggle .vt:hover:not([aria-pressed="true"]){background:var(--purple-soft);color:var(--purple)}
+/* Week-view bar: top-aligned labels, equal control heights, filters pinned right (no jump) */
+#panel-week .bar{align-items:flex-start}
+#panel-week .field-show{margin-left:auto}
+#panel-week .bar .viewtoggle,
+#panel-week .bar #weekSel{height:38px}
+#panel-week .bar .viewtoggle .vt{display:inline-flex;align-items:center}
+#panel-week .bar .filters{min-height:38px;align-items:center}
 select,input[type=text],input[type=number],input[type=time],textarea{
   background:#fff;border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;min-width:120px;
 }
@@ -98,8 +130,10 @@ textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Men
 .dot.booked{background:var(--s-booked)} .dot.bid{background:var(--s-bid)}
 .dot.option{background:var(--s-option)} .dot.out{background:var(--s-out)}
 
-/* Compact summary row in the course list */
-.summary{display:flex;flex-wrap:wrap;gap:16px;align-items:center;font-size:13px;color:var(--muted);margin-left:auto}
+/* Compact summary row in the course list — min-height matches the Search/
+   Status controls (39px/36px) so the row centers on the same line as them
+   instead of bottom-aligning short text against tall inputs. */
+.summary{display:flex;flex-wrap:wrap;gap:16px;align-items:center;min-height:38px;font-size:13px;color:var(--muted);margin-left:auto}
 .summary span{display:inline-flex;align-items:center;gap:7px}
 .summary b{color:var(--ink);font-weight:620;font-variant-numeric:tabular-nums}
 
@@ -123,7 +157,10 @@ textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Men
 .brk-label{position:absolute;left:6px;right:6px;display:flex;align-items:center;justify-content:flex-end;text-align:right;font-size:10px;font-style:italic;color:var(--muted);line-height:1.2}
 
 .ev{position:absolute;border-radius:8px;padding:6px 8px;overflow:hidden;border-left:4px solid;font-size:12.5px;line-height:1.35;cursor:pointer;box-shadow:0 1px 2px rgba(28,20,36,.07)}
-.ev:hover{filter:brightness(.97)}
+/* Darken the fill only (not `filter`, which forces compositing and can fade
+   the border-left against its border-radius on hover) so the left border
+   stays crisp. */
+.ev:hover{box-shadow:0 1px 2px rgba(28,20,36,.07), inset 0 0 0 999px rgba(20,10,25,.05)}
 .ev .t{font-weight:640;display:block;margin-bottom:2px}
 .ev .m{color:inherit;opacity:.78;font-size:11.5px;display:block}
 .ev .m.wk{opacity:1;font-weight:600;margin-top:1px}
@@ -341,6 +378,12 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
 .ics-opt input[type=checkbox]{width:16px;height:16px;flex:none}
 .ics-opt select{min-width:0;padding:4px 8px;font-size:13px}
 .ics-opt select:disabled{opacity:.45}
+.chiprow{display:flex;flex-wrap:wrap;gap:7px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:999px;
+  padding:6px 12px 6px 10px;font-size:12.5px;font-weight:540;color:var(--ink);cursor:pointer;background:#fff}
+.chip input[type=checkbox]{width:14px;height:14px;flex:none}
+.chip:has(input:checked){background:var(--purple-soft);border-color:var(--purple);color:var(--purple);font-weight:610}
+.chip:hover{border-color:var(--purple)}
 .modal h3{margin:0 0 4px;font-size:17px;font-weight:650}
 .modal-section{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .modal-section:first-of-type{border-top:0;margin-top:14px;padding-top:0}
@@ -365,23 +408,45 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
 .print-head h1{font-size:16px;margin:0 0 2px;font-weight:700}
 .print-sub{font-size:12px;color:#555;margin-bottom:10px}
 .print-warn{border:1px solid #e3c3c3;background:#fbeaea;padding:7px 10px;border-radius:6px;font-size:11px;margin-bottom:10px}
-.print-grid{display:grid;gap:10px;align-items:start}
-.print-daytitle{font-weight:700;font-size:12px;border-bottom:1.5px solid #333;padding-bottom:4px;margin-bottom:7px}
-.print-daytitle small{display:block;font-weight:400;color:#666;font-size:10px}
-.print-card{
-  border:1px solid #ccc;border-left:3px solid #666;border-radius:4px;
-  padding:5px 7px;margin-bottom:6px;font-size:10.5px;line-height:1.35;
-  break-inside:avoid;page-break-inside:avoid;
-}
-.print-card.booked{border-left-color:#186b4d}
-.print-card.bid{border-left-color:#9a5b06}
-.print-card.option{border-left-color:#2f4f9e}
-.print-card.out{border-left-color:#6f6479}
-.print-time{font-weight:600}
-.print-title{font-weight:700;margin:2px 0}
-.print-meta{color:#555}
 .print-empty{color:#999;font-size:10px;font-style:italic}
 .print-foot{margin-top:14px;font-size:9px;color:#999}
+
+/* Print timetable (time-axis grid), used for both a single printed week and
+   "All weeks · max load". Bounded to a fixed pixel height (see
+   js/printView.js) so it always fits one landscape page and
+   page-break-inside:avoid can never slice an event across pages.
+   The gutter (hour labels) is a left padding, not a grid column, shared
+   by both the day-head row and the day-column row so they line up
+   exactly — see the comment on renderPrintTimeGrid. */
+.print-timegrid{page-break-inside:avoid;break-inside:avoid;margin-top:2px}
+.pt-headrow{display:grid;column-gap:6px;margin-bottom:5px}
+.pt-dayhead{font-weight:700;font-size:10px;text-align:center;border-bottom:1.5px solid #333;padding-bottom:3px}
+.pt-dayhead small{display:block;font-weight:400;color:#666;font-size:8px;margin-top:1px}
+.pt-canvas{position:relative}
+.pt-hourlabel{position:absolute;left:0;width:28px;font-size:7.5px;color:#777;text-align:right;transform:translateY(-4px)}
+/* z-index above the bands (so every hour shows, not just the one gap with no
+   band behind it) but below the event cards (so it doesn't cut through their
+   text — the cards' opaque background covers the line underneath them). */
+.pt-hourline{position:absolute;right:0;border-top:1px solid #d8d8d8;z-index:1}
+.pt-hourline-end{border-top-color:#999}
+.pt-days{position:absolute;top:0;right:0;bottom:0;display:grid;column-gap:6px}
+.pt-daycol{position:relative;height:100%;border-left:1px solid #e4e4e4}
+.pt-band{position:absolute;left:0;right:0;background:#f8f7fb}
+.pt-band.alt{background:#fcfbff}
+.pt-brk{position:absolute;left:1px;right:1px;background:repeating-linear-gradient(45deg,#eee,#eee 3px,#fff 3px,#fff 6px)}
+.pt-ev{
+  position:absolute;border-radius:4px;border:1px solid #ccc;border-left:2.5px solid #888;
+  background:#fff;padding:2px 4px;overflow:hidden;font-size:7.8px;line-height:1.25;
+  z-index:2;
+}
+.pt-ev.booked{border-left-color:#186b4d}
+.pt-ev.bid{border-left-color:#9a5b06}
+.pt-ev.option{border-left-color:#2f4f9e}
+.pt-ev.out{border-left-color:#6f6479}
+.pt-ev.clash{outline:1.2px solid #b23b3b}
+.pt-t{font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-m{color:#555;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-m.pt-wk{color:#8a5a94;font-weight:600}
 
 /* ---------- Current-week badge (fixed corner) ---------- */
 .now-badge{

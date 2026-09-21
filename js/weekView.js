@@ -191,19 +191,26 @@ function renderClashes(){
 function renderWeekSelect(){
   const sel = $("#weekSel");
   sel.innerHTML = "";
-  const optAll = el("option", null, "All weeks · combined (max load)");
-  optAll.value = "all";
-  if(state.week === "all") optAll.selected = true;
-  sel.appendChild(optAll);
-  const sep = el("option", null, "───────────");
-  sep.disabled = true;
-  sel.appendChild(sep);
+  // The dropdown lists only real weeks now; "all weeks · max load" is the toggle.
+  const shownWeek = state.week === "all" ? currentSemesterWeek().week : state.week;
   for(let w=1; w<=TOTAL_WEEKS; w++){
     const o = el("option", null, "Week "+w+" · "+weekDates(w).label);
     o.value = w;
-    if(w===state.week) o.selected = true;
+    if(w===shownWeek) o.selected = true;
     sel.appendChild(o);
   }
+  syncViewControls();
+}
+
+/* Reflect the current view (single week vs. all-weeks max-load) in the toggle
+   and show the week dropdown only in single-week mode. */
+function syncViewControls(){
+  const isAll = state.week === "all";
+  document.querySelectorAll("#viewToggle .vt").forEach(b=>{
+    b.setAttribute("aria-pressed", (b.dataset.view === (isAll ? "all" : "week")) ? "true" : "false");
+  });
+  const wf = $("#weekSelField");
+  if(wf) wf.hidden = isAll;
 }
 
 /* ============================================================
