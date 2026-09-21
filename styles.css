@@ -57,9 +57,10 @@ header.top{background:var(--purple);color:#fff;padding:16px 28px 0}
 .help-btn:hover{background:rgba(255,255,255,.26)}
 
 /* Quick-start modal list */
-.help-list{margin:8px 0 4px;padding-left:0;list-style:none}
-.help-list li{display:flex;align-items:flex-start;gap:9px;margin:9px 0;font-size:13.5px;line-height:1.55}
-.help-ico{flex:none;width:20px;font-size:15px;line-height:1.55;text-align:center}
+.modal-help h3{font-size:20px}
+.help-list{margin:14px 0 6px;padding-left:0;list-style:none}
+.help-list li{display:flex;align-items:flex-start;gap:12px;margin:14px 0;font-size:15px;line-height:1.6}
+.help-ico{flex:none;width:24px;font-size:18px;line-height:1.6;text-align:center}
 
 /* ---------- Layout ---------- */
 main{max-width:var(--wrap);margin:0 auto;padding:22px 28px 80px}
@@ -377,6 +378,7 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
 .modal.modal-wide{max-width:640px}
 .modal.modal-ics{max-width:660px}
 .modal.modal-xls{max-width:760px}
+.modal.modal-help{max-width:640px;padding:28px 32px}
 .modal-ics .ics-course-list{max-height:260px}
 .ics-empty{padding:14px;color:var(--muted);font-size:13px;text-align:center}
 .ics-opt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;padding:5px 0}
