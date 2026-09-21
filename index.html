@@ -138,14 +138,7 @@
         <div class="fsection-title"><span class="step">1</span> Course details</div>
         <div class="formgrid formgrid-main">
           <label class="field field-required span-2"><span>Course title <em class="req" title="required">*</em></span><input type="text" id="fTitleEn" placeholder="e.g. Digital Economy"></label>
-          <label class="field span-2"><span>Chinese title <em class="opt">optional</em></span><input type="text" id="fTitleCn"></label>
-          <label class="field"><span>Course number <em class="opt">optional</em></span><input type="text" id="fNumber"></label>
-          <label class="field"><span>Sequence <em class="opt">optional</em></span><input type="text" id="fSeq"></label>
           <label class="field field-required"><span>Credits <em class="req" title="required">*</em></span><input type="number" id="fCredits" step="0.5" min="0"></label>
-          <label class="field"><span>Language <em class="opt">optional</em></span><input type="text" id="fLang" placeholder="English"></label>
-          <label class="field span-2"><span>Instructor <em class="opt">optional</em></span><input type="text" id="fInstructor"></label>
-          <label class="field span-2"><span>Department <em class="opt">optional</em></span><input type="text" id="fDept"></label>
-          <label class="field span-2"><span>Room <em class="opt">optional</em></span><input type="text" id="fRoom" placeholder="e.g. Rm. A201, Jianhua Bldg."></label>
           <div class="field span-2 status-field field-required">
             <span class="labelrow"><span>Status <em class="req" title="required">*</em></span>
               <button type="button" class="infobtn" id="statusInfoBtn" aria-expanded="false">ⓘ What do these mean?</button>
@@ -158,6 +151,14 @@
               <b>Dropped</b> — removed from your plan (moves to the archive)
             </div>
           </div>
+
+          <div class="field-divider span-full">Optional details</div>
+          <label class="field span-2"><span>Chinese title <em class="opt">optional</em></span><input type="text" id="fTitleCn"></label>
+          <label class="field"><span>Course number <em class="opt">optional</em></span><input type="text" id="fNumber"></label>
+          <label class="field"><span>Language <em class="opt">optional</em></span><input type="text" id="fLang" placeholder="English"></label>
+          <label class="field span-2"><span>Instructor <em class="opt">optional</em></span><input type="text" id="fInstructor"></label>
+          <label class="field span-2"><span>Department <em class="opt">optional</em></span><input type="text" id="fDept"></label>
+          <label class="field span-2"><span>Room <em class="opt">optional</em></span><input type="text" id="fRoom" placeholder="e.g. Rm. A201, Jianhua Bldg."></label>
         </div>
       </div>
 
@@ -166,11 +167,11 @@
         <div class="fsection-title"><span class="step">2</span> When does it meet? <em class="req" title="required">*</em></div>
         <p class="hint" style="margin:0 0 12px">
           Pick the weekday and the class block for each weekly session. A course that meets on two weekdays
-          (say Monday <em>and</em> Wednesday) needs two rows — use <strong>+ Add another day</strong>.
+          (say Monday <em>and</em> Wednesday) needs two rows — use <strong>+ Add another day/meeting</strong>.
           Choose <em>Custom time…</em> only for times that don't fit a standard block.
         </p>
         <div id="slotRows"></div>
-        <button class="btn ghost small" id="addSlot" type="button">+ Add another day</button>
+        <button class="btn ghost small" id="addSlot" type="button">+ Add another day/meeting</button>
 
         <label class="field field-weeks">
           <span>Which semester weeks does it run?</span>
@@ -427,11 +428,11 @@ School of Economics and Management
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
     <h3 id="helpModalTitle">Welcome 👋 — quick start</h3>
     <ul class="help-list">
-      <li>The courses shown are just <b>examples</b> — edit or delete them, then add your own.</li>
-      <li>Add your real plan under <b>Add / edit courses</b>: import the <b>.xls</b> from the THU Info portal, or paste a course row.</li>
-      <li>Switch to <b>All weeks · max load</b> (top of Week view) to see your heaviest possible week and catch clashes.</li>
-      <li><b>Export to your own calendar</b> (Apple / Google) via <b>Data &amp; sharing → Export to calendar (.ics)</b> — with travel time &amp; reminders.</li>
-      <li>Everything saves in your browser. Share your plan via <b>Data &amp; sharing → Copy share link</b>.</li>
+      <li><span class="help-ico" aria-hidden="true">📌</span><span>The courses shown are just <b>examples</b> — edit or delete them, then add your own.</span></li>
+      <li><span class="help-ico" aria-hidden="true">✏️</span><span>Add your real plan under <b>Add / edit courses</b>: import the <b>.xls</b> from the THU Info portal, or paste a course row.</span></li>
+      <li><span class="help-ico" aria-hidden="true">🗓️</span><span>Switch to <b>All weeks · max load</b> (top of Week view) to see your heaviest possible week and catch clashes.</span></li>
+      <li><span class="help-ico" aria-hidden="true">📤</span><span><b>Export to your own calendar</b> (Apple / Google) via <b>Data &amp; sharing → Export to calendar (.ics)</b> — with travel time &amp; reminders.</span></li>
+      <li><span class="help-ico" aria-hidden="true">💾</span><span>Everything saves in your browser. Share your plan via <b>Data &amp; sharing → Copy share link</b>.</span></li>
     </ul>
     <div class="formactions">
       <button class="btn" id="helpGotIt">Got it</button>

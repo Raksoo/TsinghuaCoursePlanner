@@ -62,7 +62,6 @@ function fillForm(c){
   $("#fTitleEn").value   = c ? esc(c.titleEn) : "";
   $("#fTitleCn").value   = c ? esc(c.titleCn) : "";
   $("#fNumber").value    = c ? esc(c.number) : "";
-  $("#fSeq").value       = c ? esc(c.seq) : "";
   $("#fCredits").value   = c ? (c.credits||0) : "";
   $("#fInstructor").value= c ? esc(c.instructor) : "";
   $("#fDept").value      = c ? esc(c.dept) : "";
@@ -101,12 +100,17 @@ function readForm(){
   const slots = [...document.querySelectorAll("#slotRows .slotrow")]
     .map(r=>r._read())
     .filter(s=>s.start && s.end && toMin(s.end) > toMin(s.start));
+  const id = $("#fId").value || uid();
+  // No manual "Sequence" field in the form (it's a parser/import artifact,
+  // not something worth hand-typing) — carry over an existing course's
+  // value untouched instead of losing it on every manual edit.
+  const existing = state.courses.find(x=>x.id===id);
   return {
-    id: $("#fId").value || uid(),
+    id,
     titleEn: $("#fTitleEn").value.trim(),
     titleCn: $("#fTitleCn").value.trim(),
     number: $("#fNumber").value.trim(),
-    seq: $("#fSeq").value.trim(),
+    seq: existing ? existing.seq : "",
     credits: parseFloat($("#fCredits").value) || 0,
     instructor: $("#fInstructor").value.trim(),
     dept: $("#fDept").value.trim(),

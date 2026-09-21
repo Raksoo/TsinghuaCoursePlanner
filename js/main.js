@@ -54,10 +54,11 @@ function init(){
   });
 
   // Onboarding: quick-start modal, auto-opened once, reopenable via the "?" button.
+  // Only "Got it" closes it (no click-outside/Escape) — a deliberate dismiss,
+  // so it's less likely to get closed by accident before it's actually read.
   try{ if(!localStorage.getItem("tsinghua-planner-seen-intro")) openHelp(); }catch(e){}
   $("#helpBtn").addEventListener("click", openHelp);
   $("#helpGotIt").addEventListener("click", closeHelp);
-  $("#helpModalOverlay").addEventListener("click", e=>{ if(e.target.id==="helpModalOverlay") closeHelp(); });
   $("#search").addEventListener("input", renderTable);
   $("#listStatusFilter").addEventListener("change", renderTable);
 
@@ -242,7 +243,7 @@ function init(){
     if(!$("#printModalOverlay").hidden) closePrintModal();
     if(!$("#pasteModalOverlay").hidden) closePasteModal();
     if(!$("#xlsModalOverlay").hidden) closeXlsModal();
-    if(!$("#helpModalOverlay").hidden) closeHelp();
+    // Help modal is deliberately excluded — only "Got it" closes it.
     const si = $("#statusInfo");
     if(si && !si.hidden){ si.hidden = true; $("#statusInfoBtn").setAttribute("aria-expanded","false"); }
   });
