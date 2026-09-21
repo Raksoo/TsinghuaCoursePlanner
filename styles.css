@@ -56,11 +56,27 @@ header.top{background:var(--purple);color:#fff;padding:16px 28px 0}
 .help-btn{margin-left:auto;align-self:center;width:28px;height:28px;flex:none;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:15px;font-weight:700;cursor:pointer;line-height:1}
 .help-btn:hover{background:rgba(255,255,255,.26)}
 
-/* Quick-start modal list */
-.modal-help h3{font-size:20px}
-.help-list{margin:14px 0 6px;padding-left:0;list-style:none}
-.help-list li{display:flex;align-items:flex-start;gap:12px;margin:14px 0;font-size:15px;line-height:1.6}
-.help-ico{flex:none;width:24px;font-size:18px;line-height:1.6;text-align:center}
+/* Quick-start modal: a purple hero band (matching the app's own header)
+   makes it read as a designed welcome moment rather than a plain dialog. */
+.help-hero{
+  background:linear-gradient(135deg,var(--purple),var(--purple-mid));
+  color:#fff;padding:26px 32px 22px;display:flex;align-items:center;gap:14px;
+  border-radius:14px 14px 0 0;
+}
+.help-hero-emoji{font-size:32px;line-height:1}
+.help-hero h3{margin:0;font-size:21px;font-weight:700;color:#fff}
+.help-body{padding:22px 32px 28px}
+.help-list{margin:0 0 6px;padding-left:0;list-style:none}
+.help-list li{
+  display:flex;align-items:flex-start;gap:14px;font-size:15px;line-height:1.55;
+  padding:14px 0;border-bottom:1px solid var(--line);
+}
+.help-list li:first-child{padding-top:0}
+.help-list li:last-child{border-bottom:0;padding-bottom:10px}
+.help-ico{
+  flex:none;width:34px;height:34px;border-radius:50%;background:var(--purple-soft);
+  display:flex;align-items:center;justify-content:center;font-size:16px;margin-top:1px;
+}
 
 /* ---------- Layout ---------- */
 main{max-width:var(--wrap);margin:0 auto;padding:22px 28px 80px}
@@ -378,7 +394,7 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
 .modal.modal-wide{max-width:640px}
 .modal.modal-ics{max-width:660px}
 .modal.modal-xls{max-width:760px}
-.modal.modal-help{max-width:640px;padding:28px 32px}
+.modal.modal-help{max-width:640px;padding:0}
 .modal-ics .ics-course-list{max-height:260px}
 .ics-empty{padding:14px;color:var(--muted);font-size:13px;text-align:center}
 .ics-opt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;padding:5px 0}
@@ -402,6 +418,31 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
 .ics-course-row:last-child{border-bottom:0}
 .ics-course-row .cn{color:var(--muted);font-size:12px;margin-left:auto;white-space:nowrap;padding-left:10px}
 .ics-course-row input[type=checkbox]{width:16px;height:16px;flex:none}
+
+/* Collapsed-by-default modal sections (e.g. ICS "Notes content" / "Travel
+   time") — keeps the export button in view without scrolling. Reuses
+   .modal-section-head for the summary's label styling; the disclosure
+   triangle itself is scoped to summary.modal-section-head only, so the
+   plain <div> section headers elsewhere are untouched.
+
+   Spacing is symmetric around each divider line on purpose: the summary
+   carries equal padding top/bottom (not the shared class's margin-bottom,
+   which only makes sense once there's visible content below), and a
+   collapsible section right after another one drops its own margin-top —
+   otherwise the label sits closer to the line above it than the one below. */
+.modal-section-collapsible{margin-top:16px;border-top:1px solid var(--line)}
+.modal-section-collapsible + .modal-section-collapsible{margin-top:0}
+/* The ::before triangle becomes a second flex item inside .modal-section-head's
+   flex row — override its space-between (meant for a label + quick-action
+   buttons) back to flex-start so the triangle sits right next to the label. */
+summary.modal-section-head{cursor:pointer;list-style:none;justify-content:flex-start;margin:0;padding:14px 0}
+summary.modal-section-head::-webkit-details-marker{display:none}
+summary.modal-section-head::before{
+  content:"\25B8";display:inline-block;color:var(--muted);
+  font-size:16px;line-height:1;
+  transition:transform .15s;
+}
+.modal-section-collapsible[open] > summary.modal-section-head::before{transform:rotate(90deg)}
 
 /* ---------- Print sheet (built separately from the on-screen grid; see js/printView.js) ---------- */
 .print-sheet{display:none}

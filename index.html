@@ -283,8 +283,8 @@
       <div id="icsCourseCheckboxes" class="ics-course-list"></div>
     </div>
 
-    <div class="modal-section">
-      <div class="modal-section-head"><span>Notes content</span></div>
+    <details class="modal-section-collapsible">
+      <summary class="modal-section-head"><span>Notes content</span></summary>
       <div class="chiprow">
         <label class="chip"><input type="checkbox" id="icsInclInstructor" checked><span>Instructor</span></label>
         <label class="chip"><input type="checkbox" id="icsInclDept"><span>Department</span></label>
@@ -294,10 +294,10 @@
         <label class="chip"><input type="checkbox" id="icsInclCn"><span>Chinese name</span></label>
       </div>
       <p class="hint" style="margin:6px 0 0">The event title is always the English course name — the Chinese name, if included above, only ever appears in the notes.</p>
-    </div>
+    </details>
 
-    <div class="modal-section">
-      <div class="modal-section-head"><span>Travel time</span></div>
+    <details class="modal-section-collapsible">
+      <summary class="modal-section-head"><span>Travel time</span></summary>
       <label class="ics-opt">
         <input type="checkbox" id="icsTravel">
         <span><b>Add travel time</b> before each class —</span>
@@ -311,7 +311,7 @@
         </select>
       </label>
       <p class="hint" style="margin:2px 0 0 25px">A real travel-time block in Apple Calendar, and a “leave now” reminder in every other app.</p>
-    </div>
+    </details>
 
     <div class="formactions">
       <button class="btn" id="icsModalExport">Export .ics</button>
@@ -426,17 +426,22 @@ School of Economics and Management
 
 <div class="modal-overlay" id="helpModalOverlay" hidden>
   <div class="modal modal-help" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
-    <h3 id="helpModalTitle">Welcome 👋 — quick start</h3>
-    <ul class="help-list">
-      <li><span class="help-ico" aria-hidden="true">📌</span><span>The courses shown are just <b>examples</b> — edit or delete them, then add your own.</span></li>
-      <li><span class="help-ico" aria-hidden="true">✏️</span><span>Add your real plan under <b>Add / edit courses</b>: import the <b>.xls</b> from the THU Info portal, or paste a course row.</span></li>
-      <li><span class="help-ico" aria-hidden="true">🗓️</span><span>Switch to <b>All weeks · max load</b> (top of Week view) to see your heaviest possible week and catch clashes.</span></li>
-      <li><span class="help-ico" aria-hidden="true">📤</span><span><b>Export to your own calendar</b> (Apple / Google) via <b>Data &amp; sharing → Export to calendar (.ics)</b> — with travel time &amp; reminders.</span></li>
-      <li><span class="help-ico" aria-hidden="true">💾</span><span>Everything saves in your browser. Share your plan via <b>Data &amp; sharing → Copy share link</b>.</span></li>
-    </ul>
-    <div class="formactions">
-      <button class="btn" id="helpGotIt">Got it</button>
-      <span class="hint">Reopen anytime with the <b>?</b> button up top.</span>
+    <div class="help-hero">
+      <span class="help-hero-emoji" aria-hidden="true">👋</span>
+      <h3 id="helpModalTitle">Welcome — quick start</h3>
+    </div>
+    <div class="help-body">
+      <ul class="help-list">
+        <li><span class="help-ico" aria-hidden="true">📌</span><span>The courses shown are just <b>examples</b> — edit or delete them, then add your own.</span></li>
+        <li><span class="help-ico" aria-hidden="true">✏️</span><span>Add your real plan under <b>Add / edit courses</b>: import the <b>.xls</b> from the THU Info portal, or paste a course row.</span></li>
+        <li><span class="help-ico" aria-hidden="true">🗓️</span><span>Switch to <b>All weeks · max load</b> (top of Week view) to see your heaviest possible week and catch clashes.</span></li>
+        <li><span class="help-ico" aria-hidden="true">📤</span><span><b>Export to your own calendar</b> (Apple / Google) via <b>Data &amp; sharing → Export to calendar (.ics)</b> — with travel time &amp; reminders.</span></li>
+        <li><span class="help-ico" aria-hidden="true">💾</span><span>Everything saves in your browser. Share your plan via <b>Data &amp; sharing → Copy share link</b>.</span></li>
+      </ul>
+      <div class="formactions">
+        <button class="btn" id="helpGotIt">Got it</button>
+        <span class="hint">Reopen anytime with the <b>?</b> button up top · optimized for laptop / desktop screens.</span>
+      </div>
     </div>
   </div>
 </div>
