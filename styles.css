@@ -123,6 +123,10 @@ h2{font-size:17px;font-weight:640;letter-spacing:-0.01em;margin:0 0 4px}
 select,input[type=text],input[type=number],input[type=time],textarea{
   background:#fff;border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;min-width:120px;
 }
+/* input[type=time] renders taller than select/text inputs in some browsers
+   even with identical padding (native AM/PM chrome) — pin all non-textarea
+   controls to the same height so rows with mixed control types stay aligned. */
+select,input[type=text],input[type=number],input[type=time]{height:38px}
 select:focus,input:focus,textarea:focus{outline:2px solid var(--purple-mid);outline-offset:0;border-color:var(--purple-mid)}
 textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.6}
 
