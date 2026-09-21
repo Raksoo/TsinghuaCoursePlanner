@@ -173,10 +173,15 @@ function init(){
   $("#icsCoursesNone").addEventListener("click", ()=>{
     document.querySelectorAll("#icsCourseCheckboxes input[type=checkbox]").forEach(cb=>cb.checked=false);
   });
+  $("#icsTravel").addEventListener("change", e=>{ $("#icsTravelMin").disabled = !e.target.checked; });
   $("#icsModalExport").addEventListener("click", ()=>{
     let weekFrom = +$("#icsWeekFrom").value, weekTo = +$("#icsWeekTo").value;
     if(weekFrom > weekTo){ const t=weekFrom; weekFrom=weekTo; weekTo=t; }
-    const ok = downloadICS({ courseIds: icsModalSelectedIds(), weekFrom, weekTo });
+    const ok = downloadICS({
+      courseIds: icsModalSelectedIds(), weekFrom, weekTo,
+      includeChinese: $("#icsInclCn").checked,
+      travelMin: $("#icsTravel").checked ? (parseInt($("#icsTravelMin").value) || 0) : 0
+    });
     if(ok) closeICSModal();
   });
 

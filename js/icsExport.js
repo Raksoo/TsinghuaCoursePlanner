@@ -48,11 +48,13 @@ function foldICSLine(line){
   return out;
 }
 
-/* opts: {courseIds: Set<string>, weekFrom: number, weekTo: number} */
+/* opts: {courseIds, weekFrom, weekTo, includeChinese, travelMin} */
 function buildICS(opts){
   const courseIds = (opts && opts.courseIds) || new Set(state.courses.filter(isVisible).map(c=>c.id));
   const weekFrom = (opts && opts.weekFrom) || 1;
   const weekTo = (opts && opts.weekTo) || TOTAL_WEEKS;
+  const includeChinese = !!(opts && opts.includeChinese);
+  const travelMin = (opts && opts.travelMin) || 0;
   const now = fmtICSDate(new Date());
   const lines = [
     "BEGIN:VCALENDAR",
@@ -72,8 +74,10 @@ function buildICS(opts){
           const dtStart = beijingToUTC(w, slot.day, slot.start);
           const dtEnd = beijingToUTC(w, slot.day, slot.end);
           const uidStr = (c.id+"-"+si+"-w"+w+"@tsinghua-planner").replace(/[^A-Za-z0-9@\-]/g,"");
-          const summary = icsEscape((c.titleEn || c.titleCn) + (c.titleEn && c.titleCn ? " / "+c.titleCn : ""));
+          // Title is English only — the Chinese name never goes in the title.
+          const summary = icsEscape(c.titleEn || c.titleCn || "Course");
           const descParts = [
+            includeChinese && c.titleCn ? "Chinese: "+c.titleCn : "",
             c.instructor ? "Instructor: "+c.instructor : "",
             c.dept || "",
             "Status: "+statusLabel(c.status),
@@ -88,6 +92,16 @@ function buildICS(opts){
           lines.push(foldICSLine("SUMMARY:"+summary));
           if(c.room) lines.push(foldICSLine("LOCATION:"+icsEscape(c.room)));
           if(descParts.length) lines.push(foldICSLine("DESCRIPTION:"+icsEscape(descParts.join(" · "))));
+          if(travelMin > 0){
+            // Apple Calendar: a real travel-time block before the event (other apps ignore this).
+            lines.push("X-APPLE-TRAVEL-DURATION;VALUE=DURATION:PT"+travelMin+"M");
+            // A plain reminder that works in every calendar app.
+            lines.push("BEGIN:VALARM");
+            lines.push("ACTION:DISPLAY");
+            lines.push(foldICSLine("DESCRIPTION:"+icsEscape("Leave for "+(c.titleEn || c.titleCn || "class"))));
+            lines.push("TRIGGER:-PT"+travelMin+"M");
+            lines.push("END:VALARM");
+          }
           lines.push("END:VEVENT");
           count++;
         });

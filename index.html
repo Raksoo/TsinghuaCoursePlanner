@@ -272,6 +272,27 @@
       <div id="icsCourseCheckboxes" class="ics-course-list"></div>
     </div>
 
+    <div class="modal-section">
+      <div class="modal-section-head"><span>Options</span></div>
+      <label class="ics-opt">
+        <input type="checkbox" id="icsInclCn">
+        <span>Add the <b>Chinese course name</b> to the event notes (never in the title)</span>
+      </label>
+      <label class="ics-opt">
+        <input type="checkbox" id="icsTravel">
+        <span><b>Travel time</b> before each class —</span>
+        <select id="icsTravelMin" disabled>
+          <option value="10">10 min</option>
+          <option value="15" selected>15 min</option>
+          <option value="20">20 min</option>
+          <option value="30">30 min</option>
+          <option value="45">45 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </label>
+      <p class="hint" style="margin:2px 0 0 25px">A real travel-time block in Apple Calendar, and a “leave now” reminder in every other app.</p>
+    </div>
+
     <div class="formactions">
       <button class="btn" id="icsModalExport">Export .ics</button>
       <button class="btn ghost" id="icsModalCancel">Cancel</button>
