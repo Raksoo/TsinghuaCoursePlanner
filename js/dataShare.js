@@ -83,9 +83,13 @@ function importJSONFile(file){
       const list = Array.isArray(p) ? p : p.courses;
       if(!Array.isArray(list)) throw new Error("no course array");
       if(confirm("Importing replaces your current list ("+state.courses.length+" courses). Continue?")){
-        state.courses = list.map(c=>Object.assign({id:uid(), status:"option", slots:[], weeks:"1-16"}, c));
         if(p.visible) state.visible = Object.assign(state.visible, p.visible);
-        save(); renderAll(); toast(state.courses.length+" courses imported");
+        const overrides = (p.overrides && typeof p.overrides==="object" && !Array.isArray(p.overrides)) ? p.overrides : {};
+        commit("Import "+list.length+" courses from file", {
+          courses: list.map(c=>Object.assign({id:uid(), status:"option", slots:[], weeks:"1-16"}, c)),
+          overrides
+        });
+        toastUndo(state.courses.length+" courses imported");
       }
     }catch(err){ alert("This file cannot be read: "+err.message); }
   };
@@ -98,7 +102,7 @@ function importJSONFile(file){
    ============================================================ */
 function sharePlan(){
   try{
-    const json = JSON.stringify({ v:1, courses: state.courses, goal: state.goal });
+    const json = JSON.stringify({ v:1, courses: state.courses, goal: state.goal, overrides: state.overrides || {} });
     const url = location.origin + location.pathname + "#plan=" + btoa(unescape(encodeURIComponent(json)));
     const fallback = () => window.prompt("Copy this share link:", url);
     if(navigator.clipboard && navigator.clipboard.writeText){
@@ -121,22 +125,26 @@ function importFromHash(){
     if(Array.isArray(list) && list.length &&
        confirm("This link contains a shared plan with "+list.length+" course"+(list.length===1?"":"s")+
                ". Load it? This replaces your current list.")){
-      state.courses = list.map(c=>Object.assign({id:uid(), status:"option", slots:[], weeks:"1-16"}, c));
       if(p.goal!=null) state.goal = parseFloat(p.goal)||0;
-      save();
-      toast(state.courses.length+" courses loaded from the link");
+      const overrides = (p.overrides && typeof p.overrides==="object" && !Array.isArray(p.overrides)) ? p.overrides : {};
+      // render:false — this runs during start-up, before the first draw.
+      commit("Load "+list.length+" courses from a shared link", {
+        courses: list.map(c=>Object.assign({id:uid(), status:"option", slots:[], weeks:"1-16"}, c)),
+        overrides
+      }, { render:false });
+      toastUndo(state.courses.length+" courses loaded from the link");
     }
   }catch(e){ /* malformed link — ignore */ }
   history.replaceState(null, "", location.pathname + location.search);
 }
 
 function resetEverything(){
-  if(confirm("Reset everything? This clears all your courses and settings in this browser and cannot be undone.")){
-    state.courses = [];
+  if(confirm("Reset everything? This clears all your courses and settings in this browser. (Courses can be brought back with Undo.)")){
     state.goal = 0;
     state.visible = {booked:true, bid:true, option:true, out:false};
     state.week = currentSemesterWeek().week;
-    save(); renderWeekSelect(); renderAll();
-    toast("Everything reset");
+    commit("Reset everything", { courses: [], overrides: {} });
+    renderWeekSelect();
+    toastUndo("Everything reset");
   }
 }

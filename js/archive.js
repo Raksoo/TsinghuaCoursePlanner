@@ -46,8 +46,9 @@ function renderArchive(){
     const bRestore = el("button","btn ghost small","Restore");
     bRestore.title = "Set status back to Option";
     bRestore.addEventListener("click", ()=>{
-      c.status = "option"; save(); renderAll();
-      toast("Restored as Option");
+      commit("Restore “"+(c.titleEn||c.titleCn||"course")+"”",
+             { courses: state.courses.map(x=>x.id===c.id ? Object.assign({}, x, {status:"option"}) : x) });
+      toastUndo("Restored as Option");
     });
     const bDel = el("button","btn danger small","Delete");
     bDel.addEventListener("click", ()=>deleteCourseWithConfirm(c.id));

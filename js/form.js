@@ -207,17 +207,19 @@ function renderPreview(){
   const add = el("button","btn","Add selected");
   add.addEventListener("click", ()=>{
     const boxes = [...host.querySelectorAll("input[type=checkbox]")];
-    let added = 0, skipped = 0;
+    const toAdd = [];
+    let skipped = 0;
     boxes.forEach(b=>{
       if(!b.checked) return;
       const c = pending[+b.dataset.i];
       const dup = state.courses.find(x=>x.number && x.number===c.number && String(x.seq)===String(c.seq));
       if(dup){ skipped++; return; }
-      state.courses.push(c); added++;
+      toAdd.push(c);
     });
+    const added = toAdd.length;
     pending = []; const pb = $("#pasteBox"); if(pb) pb.value = ""; renderPreview();
-    save(); renderAll();
-    toast(added+(added===1?" course added":" courses added")+(skipped?", "+skipped+" skipped as duplicate":""));
+    if(added) commit("Add "+added+(added===1?" course":" courses"), { courses: state.courses.concat(toAdd) });
+    toastUndo(added+(added===1?" course added":" courses added")+(skipped?", "+skipped+" skipped as duplicate":""));
     if(added){ closeImportModals(); showPanel("week"); } // feature: land on the week view after adding
   });
   const cancel = el("button","btn ghost","Discard");

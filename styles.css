@@ -55,6 +55,12 @@ header.top{background:var(--purple);color:#fff;padding:16px 28px 0}
 .tab:focus-visible{outline:2px solid #fff;outline-offset:-3px}
 .help-btn{margin-left:auto;align-self:center;width:28px;height:28px;flex:none;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:15px;font-weight:700;cursor:pointer;line-height:1}
 .help-btn:hover{background:rgba(255,255,255,.26)}
+/* Undo / redo (history.js): sit next to the help button, greyed when empty */
+.hist-btns{margin-left:auto;align-self:center;display:inline-flex;gap:4px;margin-right:8px}
+.hist-btns + .help-btn{margin-left:0}
+.hist-btn{width:28px;height:28px;flex:none;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:16px;line-height:1;cursor:pointer}
+.hist-btn:hover:not(:disabled){background:rgba(255,255,255,.26)}
+.hist-btn:disabled{opacity:.35;cursor:default}
 
 /* Quick-start modal: a purple hero band (matching the app's own header)
    makes it read as a designed welcome moment rather than a plain dialog. */
@@ -186,6 +192,72 @@ textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Men
 .ev .t{font-weight:640;display:block;margin-bottom:2px}
 .ev .m{color:inherit;opacity:.78;font-size:11.5px;display:block}
 .ev .m.wk{opacity:1;font-weight:600;margin-top:1px}
+/* ---------- Catalog tab (catalog.js) ---------- */
+.cat-deadlines{margin:-6px 0 14px;font-size:13px;color:var(--muted)}
+.cat-deadlines summary{cursor:pointer;font-weight:560}
+.cat-deadlines ul{margin:6px 0 0;padding-left:18px}
+.cat-deadlines li{margin:2px 0}
+.cat-count-field{margin-left:auto;text-align:right}
+.cat-count-field b{font-size:14px;line-height:38px}
+#catalogSearch{width:260px;max-width:100%}
+.cat-list{display:grid;grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));gap:12px}
+.cat-empty{grid-column:1 / -1;padding:28px;text-align:center;color:var(--muted);font-size:13.5px}
+.cat-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.cat-card.inplan{background:#fbfafc;border-style:dashed}
+.cat-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.cat-title{margin:0;font-size:15px;font-weight:640;line-height:1.3}
+.cat-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.cat-badge{font-size:11px;font-weight:620;padding:1px 8px;border-radius:999px;background:var(--purple-soft);color:var(--purple)}
+.cat-badge.cp{background:#eef0f4;color:#3c3547}
+.cat-badge.prog-MiM,.cat-badge.prog-MoF{background:#fbf0dc;color:#9a5b06}
+.cat-badge.prog-Chinese{background:#e2f1ea;color:#186b4d}
+.cat-act{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.cat-inplan{font-size:12px;font-weight:620;color:var(--s-booked);white-space:nowrap}
+.cat-sub{color:var(--muted);font-size:12.5px}
+.cat-when{font-size:13px;font-variant-numeric:tabular-nums}
+.cat-clash{font-size:12.5px;color:var(--danger);background:var(--danger-bg);border-radius:8px;padding:5px 9px}
+.cat-details{margin-top:4px;font-size:13px}
+.cat-details summary{cursor:pointer;color:var(--purple);font-weight:560;font-size:12.5px}
+.cat-desc{margin:8px 0 6px;line-height:1.5}
+.cat-facts{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:3px 12px;font-size:12.5px}
+.cat-facts dt{color:var(--muted);font-weight:560}
+.cat-facts dd{margin:0}
+.cat-link{display:inline-block;margin-top:8px;font-size:12.5px;color:var(--purple);font-weight:560}
+
+/* Holidays & moved meetings (calendar.js) */
+.dayhead.holiday{background:#fdf3f3}
+.dayhead.holiday small{color:var(--danger);font-weight:560}
+.holiday-overlay{position:absolute;left:0;right:0;top:0;pointer-events:none;
+  background:repeating-linear-gradient(135deg, rgba(164,31,31,.07) 0 6px, transparent 6px 14px)}
+.ev.on-holiday{opacity:.55}
+.ev.cancelled{opacity:.55;text-decoration:line-through}
+.ev.cancelled .badge{text-decoration:none}
+.ev.moved{outline:2px dashed var(--purple-mid);outline-offset:-2px}
+.ev .badge{display:inline-block;font-size:10.5px;font-weight:650;padding:1px 7px;border-radius:999px;margin-top:3px;line-height:1.5}
+.badge.hol{background:#fbeaea;color:var(--danger)}
+.badge.mv{background:var(--purple-soft);color:var(--purple)}
+.ev .ev-move{position:absolute;top:4px;right:4px;font-size:10px;font-weight:500;padding:0 6px;border-radius:6px;
+  border:1px solid transparent;background:transparent;color:inherit;opacity:0;transition:opacity .12s}
+.ev:hover .ev-move,.ev:focus .ev-move,.ev .ev-move:focus{opacity:.55}
+.ev .ev-move:hover,.ev .ev-move:focus{opacity:1;border-color:currentColor;background:rgba(255,255,255,.9)}
+/* …but stand out where a decision is pending (holiday / already moved). */
+.ev .ev-move.attn{font-weight:600;border-color:currentColor;background:rgba(255,255,255,.9)}
+.ev:hover .ev-move.attn,.ev:focus .ev-move.attn{opacity:1}
+.note.hol{border-left-color:var(--purple-mid);background:#faf6fc}
+.note.hol .badge{display:inline-block;font-size:11px;font-weight:650;padding:1px 7px;border-radius:999px;margin-left:4px}
+.note.hol li{margin:6px 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
+.note.hol .hint{margin:0 0 4px}
+.note.hol.collapsible{padding:0}
+.note.hol.collapsible > .hol-summary{cursor:pointer;padding:12px 14px;font-size:14px;font-weight:640;list-style:none}
+.note.hol.collapsible > .hol-summary::-webkit-details-marker{display:none}
+.note.hol.collapsible > .hol-summary::before{content:"▸";display:inline-block;margin-right:8px;color:var(--purple-mid);transition:transform .12s}
+.note.hol.collapsible[open] > .hol-summary::before{transform:rotate(90deg)}
+.note.hol.collapsible > .hint,.note.hol.collapsible > ul{margin-left:14px;margin-right:14px}
+.note.hol.collapsible > ul{margin-bottom:12px}
+.rowact.inline{display:inline-flex;gap:6px;margin-left:6px}
+.move-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.move-grid .span-2{grid-column:1 / -1}
+.move-grid input[type=date]{background:#fff;border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;height:38px;min-width:120px}
 .ev.clash{outline:2px solid var(--danger);outline-offset:-2px}
 .ev.booked{background:var(--s-booked-bg);border-color:var(--s-booked);color:#12352a}
 .ev.bid{background:var(--s-bid-bg);border-color:var(--s-bid);color:#4a2d05}
@@ -401,6 +473,7 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
 .modal.modal-help{max-width:640px;padding:0}
 .modal-ics .ics-course-list{max-height:260px}
 .ics-empty{padding:14px;color:var(--muted);font-size:13px;text-align:center}
+.ics-summary{margin:14px 0 0;padding:8px 11px;background:var(--purple-soft);border-radius:8px;font-size:13px;font-weight:600;color:var(--purple)}
 .ics-opt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;padding:5px 0}
 .ics-opt input[type=checkbox]{width:16px;height:16px;flex:none}
 .ics-opt select{min-width:0;padding:4px 8px;font-size:13px}
@@ -474,6 +547,12 @@ summary.modal-section-head::before{
 .pt-headrow{display:grid;column-gap:6px;margin-bottom:5px}
 .pt-dayhead{font-weight:700;font-size:10px;text-align:center;border-bottom:1.5px solid #333;padding-bottom:3px}
 .pt-dayhead small{display:block;font-weight:400;color:#666;font-size:8px;margin-top:1px}
+.pt-dayhead.holiday small{color:#a41f1f}
+.pt-daycol.holiday{background:repeating-linear-gradient(135deg, rgba(164,31,31,.08) 0 4px, transparent 4px 10px)}
+.pt-daycol.holiday .pt-band{background:transparent}
+.pt-ev.on-holiday,.pt-ev.cancelled{opacity:.5}
+.pt-ev.moved{border:1px dashed #8d3a9c}
+.pt-m.pt-flag{color:#8d3a9c;font-weight:600}
 .pt-canvas{position:relative}
 .pt-hourlabel{position:absolute;left:0;width:28px;font-size:7.5px;color:#777;text-align:right;transform:translateY(-4px)}
 /* z-index above the bands (so every hour shows, not just the one gap with no

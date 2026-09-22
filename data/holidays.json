@@ -1,0 +1,16 @@
+{
+  "semester": "2026-2027 Autumn",
+  "source": "Tsinghua University Academic Calendar 2026–2027 (assets/Tsinghua academic calendar.png)",
+  "updated": "2026-09-22",
+  "holidays": [
+    { "date": "2026-09-25", "name": "Mid-Autumn Festival" },
+    { "date": "2026-10-01", "name": "National Day" },
+    { "date": "2026-10-02", "name": "National Day" },
+    { "date": "2026-10-03", "name": "National Day" },
+    { "date": "2026-10-04", "name": "National Day" },
+    { "date": "2026-10-05", "name": "National Day" },
+    { "date": "2026-10-06", "name": "National Day" },
+    { "date": "2026-10-07", "name": "National Day" },
+    { "date": "2027-01-01", "name": "New Year" }
+  ]
+}

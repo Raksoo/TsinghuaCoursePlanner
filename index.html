@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tsinghua SEM Course Planner — Fall 2026</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=20260922a">
 </head>
 <body>
 <header class="top">
@@ -25,8 +25,13 @@
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" aria-selected="true" data-panel="week">Week view</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="list">Course list</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="catalog">Catalog</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="add">Add / edit courses</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="data">Data &amp; sharing</button>
+      <span class="hist-btns">
+        <button class="hist-btn" id="undoBtn" type="button" title="Nothing to undo" aria-label="Undo" disabled>↶</button>
+        <button class="hist-btn" id="redoBtn" type="button" title="Nothing to redo" aria-label="Redo" disabled>↷</button>
+      </span>
       <button class="help-btn" id="helpBtn" type="button" title="How it works" aria-label="How it works">?</button>
     </div>
   </div>
@@ -54,6 +59,7 @@
     </div>
 
     <div id="clashBox"></div>
+    <div id="holidayBox"></div>
 
     <div class="gridwrap">
       <div class="griddays" id="grid"></div>
@@ -63,6 +69,57 @@
       Switch to <strong>“All weeks · max load”</strong> above to overlay every course at once —
       useful for spotting the heaviest possible week, even for courses that only run part of the semester.
     </p>
+  </section>
+
+  <!-- ============ CATALOG ============ -->
+  <section class="panel" id="panel-catalog">
+    <h2>Course catalog</h2>
+    <p class="lead">The MBA exchange-student list — every course from the official schedule, with details from the syllabuses.
+      Click <strong>Add to plan</strong> and the course lands in your list as an <em>Option</em>; set its status there once you
+      have booked or bid for it. Times and rooms can still change — the official schedule wins.</p>
+    <p class="hint" id="catalogMeta"></p>
+    <details class="cat-deadlines">
+      <summary>Add/drop &amp; withdrawal deadlines (Beijing time)</summary>
+      <ul id="catalogDeadlines"></ul>
+    </details>
+    <div class="bar">
+      <label class="field">
+        <span>Search</span>
+        <input type="text" id="catalogSearch" placeholder="Title, number, instructor">
+      </label>
+      <label class="field">
+        <span>Programme</span>
+        <select id="catalogProgram">
+          <option value="">All</option>
+          <option value="MBA">MBA</option>
+          <option value="MiM">Course of MiM</option>
+          <option value="MoF">Course of MoF</option>
+          <option value="Chinese">Chinese language</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Weekday</span>
+        <select id="catalogDay">
+          <option value="0">Any</option>
+          <option value="1">Monday</option>
+          <option value="2">Tuesday</option>
+          <option value="3">Wednesday</option>
+          <option value="4">Thursday</option>
+          <option value="5">Friday</option>
+        </select>
+      </label>
+      <div class="field">
+        <span>Filter</span>
+        <div class="chiprow">
+          <label class="chip"><input type="checkbox" id="catalogFits"><span>Fits my plan</span></label>
+          <label class="chip"><input type="checkbox" id="catalogHideInPlan"><span>Hide courses already in my plan</span></label>
+        </div>
+      </div>
+      <div class="field cat-count-field"><span>Showing</span><b id="catalogCount">—</b></div>
+    </div>
+    <div id="catalogList" class="cat-list"></div>
+    <p class="hint" style="margin-top:10px"><strong>Fits my plan</strong> hides courses that overlap a booked or bidding course in the
+      same week. Option courses are not considered, so you can compare alternatives side by side.</p>
   </section>
 
   <!-- ============ COURSE LIST ============ -->
@@ -256,7 +313,10 @@
 <div class="modal-overlay" id="icsModalOverlay" hidden>
   <div class="modal modal-ics" role="dialog" aria-modal="true" aria-labelledby="icsModalTitle">
     <h3 id="icsModalTitle">Export to calendar (.ics)</h3>
-    <p class="hint">Choose which weeks and which courses to include, then export.</p>
+    <p class="hint">Choose which weeks and which courses to include, then export. On a phone the share sheet opens —
+      pick <b>Calendar</b> / <b>Add all</b>; on a desktop the file downloads.</p>
+    <p class="hint hint-block">Import into a <b>dedicated calendar</b> (e.g. “Tsinghua”). To update later, delete that calendar and
+      import the new file — Apple Calendar does not replace older copies on file import.</p>
 
     <div class="modal-section">
       <div class="modal-section-head">
@@ -276,16 +336,28 @@
       <div class="modal-section-head">
         <span>Courses</span>
         <span class="modal-quick">
+          <button type="button" class="btn ghost small" id="icsCoursesBooked">Booked only</button>
           <button type="button" class="btn ghost small" id="icsCoursesAll">Select all</button>
           <button type="button" class="btn ghost small" id="icsCoursesNone">Select none</button>
         </span>
       </div>
       <div id="icsCourseCheckboxes" class="ics-course-list"></div>
+      <p class="hint" style="margin:6px 0 0">Booked courses are pre-selected — bidding and option courses would put classes you may never attend into your calendar.</p>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-head"><span>Holidays</span></div>
+      <label class="ics-opt">
+        <input type="checkbox" id="icsSkipHolidays" checked>
+        <span id="icsSkipHolidaysLabel">Skip holiday dates</span>
+      </label>
+      <p class="hint" style="margin:2px 0 0 25px">Meetings you moved by hand (week view → “Move…”) are written on their new date either way.</p>
     </div>
 
     <details class="modal-section-collapsible">
       <summary class="modal-section-head"><span>Notes content</span></summary>
       <div class="chiprow">
+        <label class="chip"><input type="checkbox" id="icsInclNumber" checked><span>Course number</span></label>
         <label class="chip"><input type="checkbox" id="icsInclInstructor" checked><span>Instructor</span></label>
         <label class="chip"><input type="checkbox" id="icsInclDept"><span>Department</span></label>
         <label class="chip"><input type="checkbox" id="icsInclStatus" checked><span>Status</span></label>
@@ -313,9 +385,53 @@
       <p class="hint" style="margin:2px 0 0 25px">A real travel-time block in Apple Calendar, and a “leave now” reminder in every other app.</p>
     </details>
 
+    <details class="modal-section-collapsible">
+      <summary class="modal-section-head"><span>Reminder</span></summary>
+      <label class="ics-opt">
+        <input type="checkbox" id="icsAlarm">
+        <span><b>Alert before each class</b> —</span>
+        <select id="icsAlarmMin" disabled>
+          <option value="5">5 min</option>
+          <option value="10">10 min</option>
+          <option value="15" selected>15 min</option>
+          <option value="30">30 min</option>
+          <option value="60">1 hour</option>
+        </select>
+      </label>
+      <p class="hint" style="margin:2px 0 0 25px">Off by default — your calendar app's own default alert applies otherwise.</p>
+    </details>
+
+    <p class="ics-summary" id="icsSummary">—</p>
+
     <div class="formactions">
       <button class="btn" id="icsModalExport">Export .ics</button>
       <button class="btn ghost" id="icsModalCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="moveModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="moveModalTitle">
+    <h3 id="moveModalTitle">Move this meeting</h3>
+    <p class="hint"><b id="moveCourse">—</b><br><span id="moveWhen">—</span></p>
+    <p class="hint">Only this one meeting changes — every other week of the course stays as it is.
+      In the week view it keeps its usual place with a “moved” note; the calendar export puts it on the new date.</p>
+
+    <div class="modal-section">
+      <label class="chip"><input type="checkbox" id="moveCancelled"><span>Cancelled — no make-up session</span></label>
+    </div>
+    <div class="modal-section move-grid">
+      <label class="field"><span>New date</span><input type="date" id="moveDate"></label>
+      <div class="field"><span>Time</span>
+        <div class="time-wrap"><input type="time" id="moveStart"><span class="time-dash">–</span><input type="time" id="moveEnd"></div>
+      </div>
+      <label class="field span-2"><span>Note <em class="opt">optional</em></span><input type="text" id="moveNote" placeholder="e.g. make-up session, room changed to A101"></label>
+    </div>
+
+    <div class="formactions">
+      <button class="btn" id="moveSave">Save</button>
+      <button class="btn ghost" id="moveClear" hidden>Clear move</button>
+      <button class="btn ghost" id="moveCancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -433,7 +549,9 @@ School of Economics and Management
     <div class="help-body">
       <ul class="help-list">
         <li><span class="help-ico" aria-hidden="true">📌</span><span>The courses shown are just <b>examples</b> — edit or delete them, then add your own.</span></li>
-        <li><span class="help-ico" aria-hidden="true">✏️</span><span>Add your real plan under <b>Add / edit courses</b>: import the <b>.xls</b> from the THU Info portal, or paste a course row.</span></li>
+        <li><span class="help-ico" aria-hidden="true">📚</span><span>Pick courses from the <b>Catalog</b> (the MBA exchange list, with syllabus details) — one click adds them as an Option.</span></li>
+        <li><span class="help-ico" aria-hidden="true">✏️</span><span>Anything else goes under <b>Add / edit courses</b>: import the <b>.xls</b> from the THU Info portal, paste a course row, or type it in.</span></li>
+        <li><span class="help-ico" aria-hidden="true">↶</span><span>Made a mistake? <b>Undo</b> (↶ up top, or ⌘Z / Ctrl+Z) takes back any change to your plan.</span></li>
         <li><span class="help-ico" aria-hidden="true">🗓️</span><span>Switch to <b>All weeks · max load</b> (top of Week view) to see your heaviest possible week and catch clashes.</span></li>
         <li><span class="help-ico" aria-hidden="true">📤</span><span><b>Export to your own calendar</b> (Apple / Google) via <b>Data &amp; sharing → Export to calendar (.ics)</b> — with travel time &amp; reminders.</span></li>
         <li><span class="help-ico" aria-hidden="true">💾</span><span>Everything saves in your browser. Share your plan via <b>Data &amp; sharing → Copy share link</b>.</span></li>
@@ -446,17 +564,20 @@ School of Economics and Management
   </div>
 </div>
 
-<script src="js/core.js"></script>
-<script src="js/parser.js"></script>
-<script src="js/weekView.js"></script>
-<script src="js/summary.js"></script>
-<script src="js/courseList.js"></script>
-<script src="js/archive.js"></script>
-<script src="js/form.js"></script>
-<script src="js/xlsImport.js"></script>
-<script src="js/icsExport.js"></script>
-<script src="js/printView.js"></script>
-<script src="js/dataShare.js"></script>
-<script src="js/main.js"></script>
+<script src="js/core.js?v=20260922a"></script>
+<script src="js/history.js?v=20260922a"></script>
+<script src="js/calendar.js?v=20260922a"></script>
+<script src="js/parser.js?v=20260922a"></script>
+<script src="js/weekView.js?v=20260922a"></script>
+<script src="js/summary.js?v=20260922a"></script>
+<script src="js/courseList.js?v=20260922a"></script>
+<script src="js/archive.js?v=20260922a"></script>
+<script src="js/form.js?v=20260922a"></script>
+<script src="js/catalog.js?v=20260922a"></script>
+<script src="js/xlsImport.js?v=20260922a"></script>
+<script src="js/icsExport.js?v=20260922a"></script>
+<script src="js/printView.js?v=20260922a"></script>
+<script src="js/dataShare.js?v=20260922a"></script>
+<script src="js/main.js?v=20260922a"></script>
 </body>
 </html>

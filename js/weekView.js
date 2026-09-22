@@ -4,8 +4,8 @@
    Meetings and clashes
    ============================================================ */
 function courseEvents(c){
-  return (c.slots||[]).map(s=>({
-    course:c, day:+s.day, s:toMin(s.start), e:toMin(s.end), start:s.start, end:s.end, block:s.block
+  return (c.slots||[]).map((s, idx)=>({
+    course:c, idx, day:+s.day, s:toMin(s.start), e:toMin(s.end), start:s.start, end:s.end, block:s.block
   }));
 }
 function isVisible(c){ return !!state.visible[c.status]; }
@@ -66,9 +66,11 @@ function renderGrid(){
 
   grid.appendChild(el("div","gutterhead"));
   days.forEach(d=>{
-    const h = el("div","dayhead");
+    const hol = holidayOn(week, d);
+    const h = el("div","dayhead"+(hol?" holiday":""));
     h.appendChild(document.createTextNode(DAYS[d-1]));
-    h.appendChild(el("small", null, week==="all" ? "all weeks" : dayDate(week,d)));
+    h.appendChild(el("small", null, week==="all" ? "all weeks" : dayDate(week,d)+(hol ? " · "+hol : "")));
+    if(hol) h.title = hol+" — no classes";
     grid.appendChild(h);
   });
 
@@ -95,7 +97,8 @@ function renderGrid(){
   clashes.forEach(c=>{ clashIds.add(c.a.id); clashIds.add(c.b.id); });
 
   days.forEach((d,di)=>{
-    const col = el("div","daycol");
+    const hol = holidayOn(week, d);
+    const col = el("div","daycol"+(hol?" holiday":""));
     col.style.height = height+"px";
 
     // Each block band covers only its own time span (not the gap after it).
@@ -113,6 +116,12 @@ function renderGrid(){
       bd.style.height = Math.max((br.end-br.start)*PPM - BRK_INSET*2, 6)+"px";
       col.appendChild(bd);
     });
+    // Holiday: hatched overlay above the bands, below the events (no classes).
+    if(hol){
+      const ovl = el("div","holiday-overlay");
+      ovl.style.height = height+"px";
+      col.appendChild(ovl);
+    }
     const dayEv = events.filter(ev=>ev.day===d).sort((a,b)=>a.s-b.s || a.e-b.e);
     // Greedy column assignment (a column is reused once its last event ends).
     const colEnds = [];
@@ -133,7 +142,10 @@ function renderGrid(){
 
     dayEv.forEach(ev=>{
       const c = ev.course;
-      const node = el("div","ev "+c.status+(clashIds.has(c.id)?" clash":""));
+      // Single meeting overrides (calendar.js): moved / cancelled / on a holiday.
+      const ov = week==="all" ? null : overrideFor(c.id, ev.idx, week);
+      const flag = ov ? (ov.movedTo ? " moved" : " cancelled") : (hol ? " on-holiday" : "");
+      const node = el("div","ev "+c.status+flag+(clashIds.has(c.id)?" clash":""));
       const w = 100/ev._ncol;
       node.style.left = "calc("+(ev._col*w)+"% + 4px)";
       node.style.width = "calc("+w+"% - 8px)";
@@ -144,10 +156,25 @@ function renderGrid(){
       if(c.room) node.appendChild(el("span","m", c.room));
       node.appendChild(el("span","m", c.credits+" CP"));
       if(week==="all") node.appendChild(el("span","m wk", "Weeks "+(c.weeks||"—")));
-      node.title = (c.titleEn||"")+"\n"+(c.titleCn||"")+"\n"+ev.start+"–"+ev.end+"\nWeeks "+c.weeks+" · "+statusLabel(c.status)+(c.note?"\n"+c.note:"");
+      if(ov) node.appendChild(el("span","badge "+(ov.movedTo?"mv":"hol"), overrideBadge(ov)));
+      else if(hol) node.appendChild(el("span","badge hol", "Holiday — no class"));
+      // Tooltip: what a click does (the card already shows the details).
+      let tip = "Click to edit this course";
+      if(ov) tip = "This meeting: "+(ov.movedTo ? "moved to "+fmtISO(ov.movedTo)+(ov.start?" "+ov.start+"–"+ov.end:"") : "cancelled")+(ov.note?" — "+ov.note:"")+"\n"+tip;
+      else if(hol) tip = hol+" — no classes\n"+tip;
+      node.title = tip;
       node.tabIndex = 0;
       node.addEventListener("click", ()=>editCourse(c.id));
       node.addEventListener("keydown", e=>{ if(e.key==="Enter") editCourse(c.id); });
+      if(week!=="all"){
+        // "Move…" for this one meeting only — shown on hover/focus so the grid stays quiet.
+        // Prominent only where a decision is pending (holiday / already moved); quiet elsewhere.
+        const mv = el("button","ev-move"+((ov||hol) ? " attn" : ""), ov ? "Edit move" : "Move…");
+        mv.type = "button";
+        mv.title = "Move or cancel only this meeting (week "+week+")";
+        mv.addEventListener("click", e=>{ e.stopPropagation(); openMoveModal(c.id, ev.idx, week); });
+        node.appendChild(mv);
+      }
       col.appendChild(node);
     });
 
@@ -163,6 +190,7 @@ function renderGrid(){
     grid.appendChild(empty);
   }
   renderClashes();
+  renderHolidayBox();
 }
 
 function renderClashes(){

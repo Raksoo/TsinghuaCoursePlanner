@@ -33,17 +33,17 @@ function updateSortHeaders(){
 
 /* Ask to confirm, then delete — and still offer a few seconds to undo.
    Keeps the original position for the undo. */
+/* No confirm() dialog any more — the deletion is undoable (toast + ⌘Z),
+   which is the better safety net. Moved-meeting overrides of the course
+   go with it. */
 function deleteCourseWithConfirm(id){
-  const idx = state.courses.findIndex(x=>x.id===id);
-  if(idx<0) return false;
-  const c = state.courses[idx];
-  if(!confirm("Delete “"+(c.titleEn||c.titleCn||"this course")+"”?")) return false;
-  state.courses = state.courses.filter(x=>x.id!==id);
-  save(); renderAll();
-  toast("Deleted “"+(c.titleEn||c.titleCn||"course")+"”", "Undo", ()=>{
-    state.courses.splice(Math.min(idx, state.courses.length), 0, c);
-    save(); renderAll(); toast("Deletion undone");
-  });
+  const c = state.courses.find(x=>x.id===id);
+  if(!c) return false;
+  const name = c.titleEn||c.titleCn||"course";
+  const overrides = {};
+  Object.keys(state.overrides||{}).forEach(k=>{ if(k.split("|")[0]!==id) overrides[k] = state.overrides[k]; });
+  commit("Delete “"+name+"”", { courses: state.courses.filter(x=>x.id!==id), overrides });
+  toastUndo("Deleted “"+name+"”");
   return true;
 }
 
@@ -104,8 +104,10 @@ function renderTable(){
       sel.appendChild(o);
     });
     sel.addEventListener("change", ()=>{
-      c.status = sel.value; save(); renderAll();
-      if(c.status==="out") toast("Moved to archive");
+      const status = sel.value;
+      commit("Status → "+statusLabel(status)+" for “"+(c.titleEn||c.titleCn||"course")+"”",
+             { courses: state.courses.map(x=>x.id===c.id ? Object.assign({}, x, {status}) : x) });
+      toastUndo(status==="out" ? "Moved to archive" : "Status changed to "+statusLabel(status));
     });
     tdS.appendChild(sel); tr.appendChild(tdS);
 

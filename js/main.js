@@ -6,6 +6,7 @@
 function showPanel(id){
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected", t.dataset.panel===id ? "true":"false"));
   document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active", p.id==="panel-"+id));
+  if(id==="catalog") ensureCatalog();   // lazy: the catalog JSON is only fetched when first needed
 }
 
 function openHelp(){ const o = $("#helpModalOverlay"); if(o) o.hidden = false; }
@@ -20,6 +21,8 @@ function renderAll(){
   renderArchive();
   renderGrid();
   renderNowBadge();
+  renderUndoButtons();
+  if(catalogStatus==="ok") renderCatalog();   // "In plan" badges follow the plan
 }
 
 function init(){
@@ -39,6 +42,8 @@ function init(){
   renderStorageNote();
   fillForm(null);
   renderAll();
+  // Holidays arrive asynchronously (data/holidays.json); redraw the parts that show them.
+  loadHolidays().then(()=>{ renderWeekSelect(); renderGrid(); });
 
   document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>showPanel(t.dataset.panel)));
 
@@ -58,8 +63,12 @@ function init(){
   // so it's less likely to get closed by accident before it's actually read.
   try{ if(!localStorage.getItem("tsinghua-planner-seen-intro")) openHelp(); }catch(e){}
   $("#helpBtn").addEventListener("click", openHelp);
+  $("#undoBtn").addEventListener("click", undo);
+  $("#redoBtn").addEventListener("click", redo);
+  document.addEventListener("keydown", historyKeyHandler);
   $("#helpGotIt").addEventListener("click", closeHelp);
   $("#search").addEventListener("input", renderTable);
+  wireCatalogControls();
   $("#listStatusFilter").addEventListener("change", renderTable);
 
   const listHead = document.querySelector("#panel-list thead");
@@ -142,9 +151,11 @@ function init(){
     if(!(c.credits > 0)){ toast("Enter the course's credits"); return; }
     if(!c.slots.length){ toast("At least one valid meeting is needed"); return; }
     const i = state.courses.findIndex(x=>x.id===c.id);
-    if(i>=0) state.courses[i] = c; else state.courses.push(c);
-    save(); renderAll(); fillForm(null);
-    toast(i>=0 ? "Course updated" : "Course saved");
+    const name = c.titleEn||c.titleCn;
+    commit((i>=0 ? "Edit “" : "Add “")+name+"”",
+           { courses: i>=0 ? state.courses.map(x=>x.id===c.id ? c : x) : state.courses.concat([c]) });
+    fillForm(null);
+    toastUndo(i>=0 ? "Course updated" : "Course saved");
     showPanel("week"); // feature: land on the week view after saving
     window.scrollTo({ top:0, behavior:"smooth" });
   });
@@ -185,31 +196,30 @@ function init(){
   $("#icsExportBtn").addEventListener("click", openICSModal);
   $("#icsModalCancel").addEventListener("click", closeICSModal);
   $("#icsModalOverlay").addEventListener("click", e=>{ if(e.target.id==="icsModalOverlay") closeICSModal(); });
-  $("#icsWeeksAll").addEventListener("click", ()=>{ $("#icsWeekFrom").value="1"; $("#icsWeekTo").value=String(TOTAL_WEEKS); });
+  $("#icsWeeksAll").addEventListener("click", ()=>{ $("#icsWeekFrom").value="1"; $("#icsWeekTo").value=String(TOTAL_WEEKS); renderICSSummary(); });
   $("#icsWeeksCurrent").addEventListener("click", ()=>{
     const w = currentSemesterWeek().week;
     $("#icsWeekFrom").value = String(w); $("#icsWeekTo").value = String(w);
+    renderICSSummary();
   });
   $("#icsCoursesAll").addEventListener("click", ()=>{
     document.querySelectorAll("#icsCourseCheckboxes input[type=checkbox]").forEach(cb=>cb.checked=true);
+    renderICSSummary();
   });
   $("#icsCoursesNone").addEventListener("click", ()=>{
     document.querySelectorAll("#icsCourseCheckboxes input[type=checkbox]").forEach(cb=>cb.checked=false);
+    renderICSSummary();
+  });
+  $("#icsCoursesBooked").addEventListener("click", ()=>{
+    document.querySelectorAll("#icsCourseCheckboxes input[type=checkbox]").forEach(cb=>cb.checked = cb.dataset.status==="booked");
+    renderICSSummary();
   });
   $("#icsTravel").addEventListener("change", e=>{ $("#icsTravelMin").disabled = !e.target.checked; });
+  $("#icsAlarm").addEventListener("change", e=>{ $("#icsAlarmMin").disabled = !e.target.checked; });
+  // Any option change refreshes the "N events · M skipped" line.
+  $("#icsModalOverlay").addEventListener("change", renderICSSummary);
   $("#icsModalExport").addEventListener("click", ()=>{
-    let weekFrom = +$("#icsWeekFrom").value, weekTo = +$("#icsWeekTo").value;
-    if(weekFrom > weekTo){ const t=weekFrom; weekFrom=weekTo; weekTo=t; }
-    const ok = downloadICS({
-      courseIds: icsModalSelectedIds(), weekFrom, weekTo,
-      includeChinese: $("#icsInclCn").checked,
-      inclInstructor: $("#icsInclInstructor").checked,
-      inclDept: $("#icsInclDept").checked,
-      inclStatus: $("#icsInclStatus").checked,
-      inclCredits: $("#icsInclCredits").checked,
-      inclNote: $("#icsInclNote").checked,
-      travelMin: $("#icsTravel").checked ? (parseInt($("#icsTravelMin").value) || 0) : 0
-    });
+    const ok = downloadICS(icsModalOptions());
     if(ok) closeICSModal();
   });
 
@@ -241,6 +251,7 @@ function init(){
     if(e.key!=="Escape") return;
     if(!$("#icsModalOverlay").hidden) closeICSModal();
     if(!$("#printModalOverlay").hidden) closePrintModal();
+    if(!$("#moveModalOverlay").hidden) closeMoveModal();
     if(!$("#pasteModalOverlay").hidden) closePasteModal();
     if(!$("#xlsModalOverlay").hidden) closeXlsModal();
     // Help modal is deliberately excluded — only "Got it" closes it.

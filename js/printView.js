@@ -92,9 +92,10 @@ function renderPrintTimeGrid(host, events, maxDay, week, clashes){
   headrow.style.paddingLeft = GUTTER_W+"px";
   headrow.style.gridTemplateColumns = "repeat("+maxDay+", 1fr)";
   for(let d=1; d<=maxDay; d++){
-    const dh = el("div","pt-dayhead");
+    const hol = holidayOn(week, d);
+    const dh = el("div","pt-dayhead"+(hol?" holiday":""));
     dh.appendChild(document.createTextNode(DAYS_SHORT[d-1]));
-    dh.appendChild(el("small", null, week==="all" ? "all weeks" : dayDate(week,d)));
+    dh.appendChild(el("small", null, week==="all" ? "all weeks" : dayDate(week,d)+(hol ? " · "+hol : "")));
     headrow.appendChild(dh);
   }
   wrap.appendChild(headrow);
@@ -129,7 +130,8 @@ function renderPrintTimeGrid(host, events, maxDay, week, clashes){
   days.style.gridTemplateColumns = "repeat("+maxDay+", 1fr)";
 
   for(let d=1; d<=maxDay; d++){
-    const col = el("div","pt-daycol");
+    const hol = holidayOn(week, d);
+    const col = el("div","pt-daycol"+(hol?" holiday":""));
 
     BLOCKS.forEach((b,i)=>{
       const band = el("div","pt-band"+(i%2?" alt":""));
@@ -162,7 +164,9 @@ function renderPrintTimeGrid(host, events, maxDay, week, clashes){
     dayEv.forEach(ev=>{
       const c = ev.course;
       const w = 100/ev._ncol;
-      const card = el("div","pt-ev "+c.status+(clashIds.has(c.id)?" clash":""));
+      const ov = week==="all" ? null : overrideFor(c.id, ev.idx, week);
+      const flag = ov ? (ov.movedTo ? " moved" : " cancelled") : (hol ? " on-holiday" : "");
+      const card = el("div","pt-ev "+c.status+flag+(clashIds.has(c.id)?" clash":""));
       card.style.left = "calc("+(ev._col*w)+"% + 1px)";
       card.style.width = "calc("+w+"% - 2px)";
       card.style.top = ((ev.s-minM)*PPM)+"px";
@@ -174,6 +178,8 @@ function renderPrintTimeGrid(host, events, maxDay, week, clashes){
       // weeks — without this it reads as if every course met simultaneously,
       // every week, instead of showing the semester's heaviest possible load.
       if(week==="all") card.appendChild(el("span","pt-m pt-wk", "Weeks "+(c.weeks||"—")));
+      if(ov) card.appendChild(el("span","pt-m pt-flag", overrideBadge(ov)));
+      else if(hol) card.appendChild(el("span","pt-m pt-flag", "Holiday — no class"));
       col.appendChild(card);
     });
 

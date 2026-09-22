@@ -64,9 +64,9 @@ function seedCourses(){
       id:"seed-leadership", titleEn:"Leadership in A New Era",
       titleCn:"麦肯锡课程：全球领导力", number:"80515182", seq:"1", credits:2,
       instructor:"HU Jia", dept:"School of Economics and Management", lang:"English",
-      room:"Rm. LG1-21, Jianhua Bldg.", weeks:"5-14", status:"booked",
+      room:"Rm. LG1-21, Jianhua Bldg.", weeks:"1-3,5-16", status:"booked",
       slots:[{day:3, start:"19:00", end:"22:00"}],
-      note:"Check: elective list says week 5-14, MBA schedule says week 1-3,5-16."
+      note:""
     },
     {
       id:"seed-chinese", titleEn:"Elementary Chinese B",
@@ -149,7 +149,9 @@ function toast(msg, actionLabel, actionFn){
 /* ============================================================
    State and storage
    ============================================================ */
-let state = { courses: [], visible: {booked:true, bid:true, option:true, out:false}, week: 1, goal: 0 };
+/* overrides: moved / cancelled single meetings, keyed "courseId|slotIdx|week"
+   (see calendar.js). Optional field — older saved states simply lack it. */
+let state = { courses: [], visible: {booked:true, bid:true, option:true, out:false}, week: 1, goal: 0, overrides: {} };
 let storageOK = true;
 
 function save(){
@@ -167,6 +169,8 @@ function load(){
         if(p.visible) state.visible = Object.assign(state.visible, p.visible);
         if(p.week) state.week = p.week;
         if(p.goal) state.goal = parseFloat(p.goal) || 0;
+        if(p.overrides && typeof p.overrides === "object" && !Array.isArray(p.overrides)) state.overrides = p.overrides;
+        if(p.icsSeq) state.icsSeq = parseInt(p.icsSeq) || 0;   // export counter (see icsExport.js)
         return;
       }
     }
