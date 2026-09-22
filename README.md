@@ -11,8 +11,9 @@ styles.css       All styles incl. print-only layout
 PLANNING.md      Roadmap for upcoming feature rounds
 CLAUDE.md        Project context / handoff notes for AI-assisted work
 assets/          Help screenshots, sample .xls, MBA schedule + syllabus PDFs, academic calendar
-data/            holidays.json (week view) and catalog-mba.json (Catalog tab)
-tools/           build-mba-catalog.py — regenerates catalog-mba.json from the PDFs in assets/
+data/            holidays.json (week view), catalog-mba.json and optional catalog-portal.json (Catalog tab)
+tools/           build-mba-catalog.py (catalog-mba.json from the PDFs) and portal-scrape.js
+                 (browser-console snapshot of the portal's course list → catalog-portal.json)
 js/
   core.js        Constants, seed data, state, localStorage load/save, small helpers
   history.js     Undo/redo (every plan change goes through commit())

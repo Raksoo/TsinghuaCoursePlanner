@@ -84,9 +84,8 @@ function overrideBadge(ov){
 function affectedMeetings(){
   const out = [];
   state.courses.filter(c=>c.status!=="out").forEach(c=>{
-    const weeks = parseWeeks(c.weeks);
     (c.slots||[]).forEach((slot, si)=>{
-      weeks.forEach(w=>{
+      slotWeeks(c, slot).forEach(w=>{
         const hol = holidayOn(w, +slot.day);
         const ov = overrideFor(c.id, si, w);
         if(!hol && !ov) return;

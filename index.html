@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tsinghua SEM Course Planner — Fall 2026</title>
-<link rel="stylesheet" href="styles.css?v=20260922a">
+<link rel="stylesheet" href="styles.css?v=20260922e">
 </head>
 <body>
 <header class="top">
@@ -24,7 +24,7 @@
     </div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" aria-selected="true" data-panel="week">Week view</button>
-      <button class="tab" role="tab" aria-selected="false" data-panel="list">Course list</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="list">My courses</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="catalog">Catalog</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="add">Add / edit courses</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="data">Data &amp; sharing</button>
@@ -74,8 +74,8 @@
   <!-- ============ CATALOG ============ -->
   <section class="panel" id="panel-catalog">
     <h2>Course catalog</h2>
-    <p class="lead">The MBA exchange-student list — every course from the official schedule, with details from the syllabuses.
-      Click <strong>Add to plan</strong> and the course lands in your list as an <em>Option</em>; set its status there once you
+    <p class="lead">The MBA exchange-student list (with syllabus details) plus, if a snapshot is present, everything the
+      Tsinghua Info portal lists as open this semester. Click <strong>Add to plan</strong> and the course lands in your list as an <em>Option</em>; set its status there once you
       have booked or bid for it. Times and rooms can still change — the official schedule wins.</p>
     <p class="hint" id="catalogMeta"></p>
     <details class="cat-deadlines">
@@ -87,6 +87,14 @@
         <span>Search</span>
         <input type="text" id="catalogSearch" placeholder="Title, number, instructor">
       </label>
+      <label class="field" id="catalogSourceField" hidden>
+        <span>Source</span>
+        <select id="catalogSource">
+          <option value="">All</option>
+          <option value="mba">MBA exchange list</option>
+          <option value="portal">Portal (all departments)</option>
+        </select>
+      </label>
       <label class="field">
         <span>Programme</span>
         <select id="catalogProgram">
@@ -95,7 +103,12 @@
           <option value="MiM">Course of MiM</option>
           <option value="MoF">Course of MoF</option>
           <option value="Chinese">Chinese language</option>
+          <option value="Portal">Portal only</option>
         </select>
+      </label>
+      <label class="field">
+        <span>Department</span>
+        <select id="catalogDept"><option value="">All</option></select>
       </label>
       <label class="field">
         <span>Weekday</span>
@@ -106,6 +119,18 @@
           <option value="3">Wednesday</option>
           <option value="4">Thursday</option>
           <option value="5">Friday</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Block</span>
+        <select id="catalogBlock">
+          <option value="0">Any</option>
+          <option value="1">1 · 08:00–09:35</option>
+          <option value="2">2 · 09:50–12:15</option>
+          <option value="3">3 · 13:30–15:05</option>
+          <option value="4">4 · 15:20–16:55</option>
+          <option value="5">5 · 17:05–18:40</option>
+          <option value="6">6 · 19:20–21:45</option>
         </select>
       </label>
       <div class="field">
@@ -124,7 +149,7 @@
 
   <!-- ============ COURSE LIST ============ -->
   <section class="panel" id="panel-list">
-    <h2>Course list</h2>
+    <h2>My courses</h2>
     <p class="lead">Click anywhere on a course to edit it. Change a status and the week view updates immediately —
       setting a course to “Dropped” moves it into the archive below, out of the way but not deleted.</p>
     <div class="bar">
@@ -172,7 +197,7 @@
         <h2 id="formTitle">Add a course manually</h2>
         <p class="lead" id="formLead">Enter a course by hand. Only a title, its credits, and one meeting time are
           required (marked <em class="req">*</em>); everything else is optional. Already have one? Click any course
-          in the Course list to edit it here — or use the buttons on the right to import.</p>
+          under My courses to edit it here — or use the buttons on the right to import.</p>
       </div>
       <div class="add-import-btns">
         <span class="import-hint">⚡ Quickest way — no typing needed:</span>
@@ -564,20 +589,20 @@ School of Economics and Management
   </div>
 </div>
 
-<script src="js/core.js?v=20260922a"></script>
-<script src="js/history.js?v=20260922a"></script>
-<script src="js/calendar.js?v=20260922a"></script>
-<script src="js/parser.js?v=20260922a"></script>
-<script src="js/weekView.js?v=20260922a"></script>
-<script src="js/summary.js?v=20260922a"></script>
-<script src="js/courseList.js?v=20260922a"></script>
-<script src="js/archive.js?v=20260922a"></script>
-<script src="js/form.js?v=20260922a"></script>
-<script src="js/catalog.js?v=20260922a"></script>
-<script src="js/xlsImport.js?v=20260922a"></script>
-<script src="js/icsExport.js?v=20260922a"></script>
-<script src="js/printView.js?v=20260922a"></script>
-<script src="js/dataShare.js?v=20260922a"></script>
-<script src="js/main.js?v=20260922a"></script>
+<script src="js/core.js?v=20260922e"></script>
+<script src="js/history.js?v=20260922e"></script>
+<script src="js/calendar.js?v=20260922e"></script>
+<script src="js/parser.js?v=20260922e"></script>
+<script src="js/weekView.js?v=20260922e"></script>
+<script src="js/summary.js?v=20260922e"></script>
+<script src="js/courseList.js?v=20260922e"></script>
+<script src="js/archive.js?v=20260922e"></script>
+<script src="js/form.js?v=20260922e"></script>
+<script src="js/catalog.js?v=20260922e"></script>
+<script src="js/xlsImport.js?v=20260922e"></script>
+<script src="js/icsExport.js?v=20260922e"></script>
+<script src="js/printView.js?v=20260922e"></script>
+<script src="js/dataShare.js?v=20260922e"></script>
+<script src="js/main.js?v=20260922e"></script>
 </body>
 </html>

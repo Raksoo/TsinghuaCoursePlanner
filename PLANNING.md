@@ -2,7 +2,8 @@
 
 Stand: 2026-09-22. Dieses Dokument ist die Arbeitsgrundlage für die nächsten
 Feature-Runden. Jede Phase wird einzeln freigegeben, gebaut, getestet,
-committet. **Status: Phase 1–4 umgesetzt (2026-09-22), Phase 5–6 offen.**
+committet. **Status: Phase 1–4 umgesetzt, Phase 5 app-seitig fertig — wartet auf den
+Portal-Snapshot von Oskar (2026-09-22). Phase 6 offen.**
 
 **Regel für jede Phase — localStorage nicht kaputt machen:** Es gibt bereits
 Nutzer der Live-Seite. `STORE_KEY` bleibt `tsinghua-planner-v1`; neue Felder
@@ -122,7 +123,7 @@ werden müssen:
 | 2 ✅ | **Feiertage + verschobene Termine** | Eigenständige Feiertags-„Datenbank" + Termin-Overrides; Kurse bleiben unberührt. ICS (Phase 3) fragt nur zwei Helfer ab | S–M |
 | 3 ✅ | **ICS-Export verbessern** | Baut direkt auf Phase 2 auf | M |
 | 4 ✅ | **Katalog a) MBA-Kurse** | Kuratierte Daten aus den beiden PDFs + neuer Tab; die UI entsteht hier | M |
-| 5 | **Katalog b) Portal-Crawl** | Scraper-Snippet, Merge, dann H (Fits-my-plan) und optional G (Alternative Sections) | M–L |
+| 5 ◐ | **Katalog b) Portal-Crawl** | Scraper-Snippet, Merge, dann H (Fits-my-plan) und optional G (Alternative Sections) | M–L |
 | 6 | **Mobile** | Zuletzt, damit der neue Katalog-Tab gleich mitbehandelt wird und keine Doppelarbeit entsteht | M–L |
 
 Aufwand: S = eine kurze Session, M = eine lange Session, L = mehrere Sessions.
@@ -487,7 +488,21 @@ Undo entfernt ihn wieder.
 
 ---
 
-### Phase 5 — Katalog b) Portal-Crawl
+### Phase 5 — Katalog b) Portal-Crawl ◐ (App-Seite umgesetzt 2026-09-22)
+
+Umgesetzt: `tools/portal-scrape.js` (Konsolen-Skript, Fetch-Strategie; liest
+das eingebettete `var gridData = […]`-Array statt HTML zu parsen — der Dump
+zeigte, dass die Seite die Tabelle so ausliefert; Resume über
+`sessionStorage`, Test-Modus `thuScrape({pages:3})`), `slot.weeks`
+(Parser, Grid, Clashes, ICS, Feiertage, Formular-Feld „Weeks (this
+meeting)"), Merge beider Quellen in `catalog.js` (Portal-Zeile mit gleicher
+Kursnummer ergänzt den MBA-Eintrag um Sequence/Remarks), Filter Source /
+Department / Block, `Restricted:`/`Priority:`-Übersetzung der Remarks-Präfixe,
+„Show more" ab 120 Karten. Getestet mit den 20 Zeilen aus dem HTML-Dump.
+**Offen:** Oskar führt das Skript aus → `data/catalog-portal.json` committen;
+danach prüfen, ob G (Alternative Sections) sich lohnt (wie viele Kursnummern
+haben mehrere Sequences?). Die DOM-Fallback-Strategie wurde nicht gebaut —
+erst, falls die Fetch-Variante am echten Portal scheitert.
 
 **Rahmen.** Portal `zhjwe.cic.tsinghua.edu.cn`, Funktion *Query courses open
 this semester* (`xkJxs.vxkJxsXkbBs.do?m=jxsKkxxSearch`): 5.032 Datensätze,

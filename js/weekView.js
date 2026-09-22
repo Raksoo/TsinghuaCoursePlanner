@@ -5,7 +5,8 @@
    ============================================================ */
 function courseEvents(c){
   return (c.slots||[]).map((s, idx)=>({
-    course:c, idx, day:+s.day, s:toMin(s.start), e:toMin(s.end), start:s.start, end:s.end, block:s.block
+    course:c, idx, day:+s.day, s:toMin(s.start), e:toMin(s.end), start:s.start, end:s.end, block:s.block,
+    weeks: slotWeeks(c, s), weeksText: s.weeks || c.weeks
   }));
 }
 function isVisible(c){ return !!state.visible[c.status]; }
@@ -16,15 +17,14 @@ function findClashes(){
   for(let i=0;i<list.length;i++){
     for(let j=i+1;j<list.length;j++){
       const A=list[i], B=list[j];
-      const wA=new Set(parseWeeks(A.weeks)), wB=parseWeeks(B.weeks);
-      const shared = wB.filter(w=>wA.has(w));
-      if(!shared.length) continue;
       const evA=courseEvents(A), evB=courseEvents(B);
       for(const a of evA) for(const b of evB){
-        if(a.day===b.day && a.s < b.e && b.s < a.e){
-          res.push({a:A, b:B, day:a.day, weeks:shared,
-                    range: fmtMin(Math.max(a.s,b.s))+"–"+fmtMin(Math.min(a.e,b.e))});
-        }
+        if(a.day!==b.day || !(a.s < b.e && b.s < a.e)) continue;
+        const wA = new Set(a.weeks);
+        const shared = b.weeks.filter(w=>wA.has(w));   // meetings can run in different weeks
+        if(!shared.length) continue;
+        res.push({a:A, b:B, day:a.day, weeks:shared,
+                  range: fmtMin(Math.max(a.s,b.s))+"–"+fmtMin(Math.min(a.e,b.e))});
       }
     }
   }
@@ -41,8 +41,7 @@ function renderGrid(){
 
   const events = [];
   state.courses.filter(isVisible).forEach(c=>{
-    if(week !== "all" && !parseWeeks(c.weeks).includes(week)) return;
-    courseEvents(c).forEach(ev=>events.push(ev));
+    courseEvents(c).forEach(ev=>{ if(week==="all" || ev.weeks.includes(week)) events.push(ev); });
   });
 
   let maxDay = 5;
@@ -155,7 +154,7 @@ function renderGrid(){
       node.appendChild(el("span","m", ev.start+"–"+ev.end));
       if(c.room) node.appendChild(el("span","m", c.room));
       node.appendChild(el("span","m", c.credits+" CP"));
-      if(week==="all") node.appendChild(el("span","m wk", "Weeks "+(c.weeks||"—")));
+      if(week==="all") node.appendChild(el("span","m wk", "Weeks "+(ev.weeksText||"—")));
       if(ov) node.appendChild(el("span","badge "+(ov.movedTo?"mv":"hol"), overrideBadge(ov)));
       else if(hol) node.appendChild(el("span","badge hol", "Holiday — no class"));
       // Tooltip: what a click does (the card already shows the details).

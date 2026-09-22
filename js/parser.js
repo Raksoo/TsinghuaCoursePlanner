@@ -6,16 +6,30 @@
 const RE_CODE = /(\d)\s*[-–]\s*(\d)\s*\(\s*week\s*([0-9,\s\-–]+)\)/ig;
 const CJK = /[一-鿿]/;
 
+/* "1-6(week 1-8),2-6(week 9-16)" → slots with their own week range when the
+   ranges differ; `weeks` is the union (what course.weeks holds). */
 function slotsFromCode(str){
-  const slots = []; let weeks = ""; let m;
+  const slots = []; const ranges = []; let m;
   RE_CODE.lastIndex = 0;
   while((m = RE_CODE.exec(str)) !== null){
-    const day = +m[1], blk = +m[2];
+    const day = +m[1], blk = +m[2], wk = m[3].replace(/\s+/g,"");
     const b = BLOCKS.find(x=>x.n===blk);
-    if(day>=1 && day<=7 && b) slots.push({day, start:b.start, end:b.end, block:blk});
-    if(!weeks) weeks = m[3].replace(/\s+/g,"");
+    if(day>=1 && day<=7 && b){ slots.push({day, start:b.start, end:b.end, block:blk, weeks:wk}); ranges.push(wk); }
   }
-  return {slots, weeks};
+  const allSame = ranges.every(r=>r===ranges[0]);
+  const union = allSame ? (ranges[0]||"") : compressWeekList([...new Set(ranges.flatMap(parseWeeks))].sort((a,b)=>a-b));
+  if(allSame) slots.forEach(s=>{ delete s.weeks; });
+  return {slots, weeks: union};
+}
+/* [1,2,3,5] → "1-3,5" (the app's own weeks notation) */
+function compressWeekList(list){
+  const out = []; let i = 0;
+  while(i < list.length){
+    let j = i; while(j+1 < list.length && list[j+1]===list[j]+1) j++;
+    out.push(i===j ? String(list[i]) : list[i]+"-"+list[j]);
+    i = j+1;
+  }
+  return out.join(",");
 }
 
 function parseRecord(fields){

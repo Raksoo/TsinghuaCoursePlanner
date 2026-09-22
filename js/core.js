@@ -101,6 +101,13 @@ function parseWeeks(str){
   return [...out].sort((a,b)=>a-b);
 }
 
+/* Weeks a single meeting runs in: its own range if it has one (portal rows
+   like "1-6(week 1-8),2-6(week 9-16)"), else the course's. course.weeks is
+   always the union, so list/strip/sort keep using it. */
+function slotWeeks(course, slot){
+  return parseWeeks((slot && slot.weeks) || course.weeks);
+}
+
 /* Calendar date (in the browser's local calendar) for a given semester
    week + weekday. Used for display labels. */
 function dateFor(w, day){
@@ -129,7 +136,7 @@ function currentSemesterWeek(){
 function statusLabel(id){ const s = STATUS.find(x=>x.id===id); return s?s.label:id; }
 function slotText(c){
   if(!c.slots || !c.slots.length) return "—";
-  return c.slots.map(s=>DAYS_SHORT[s.day-1]+" "+s.start+"–"+s.end+(s.block?" (B"+s.block+")":"")).join("; ");
+  return c.slots.map(s=>DAYS_SHORT[s.day-1]+" "+s.start+"–"+s.end+(s.block?" (B"+s.block+")":"")+(s.weeks?" · wk "+s.weeks:"")).join("; ");
 }
 function toast(msg, actionLabel, actionFn){
   const host = $("#toastHost"); host.innerHTML = "";

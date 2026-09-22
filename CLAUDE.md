@@ -25,7 +25,8 @@ events. Also rejected: a Learning-Agreement tracker (the existing credit-goal
 bar stays as is). Judge new ideas by "does it remove planning work?".
 
 **Roadmap lives in [PLANNING.md](PLANNING.md)** — six phases (Undo ✅ →
-holidays + moved meetings ✅ → ICS ✅ → MBA catalog ✅ → portal catalog → mobile),
+holidays + moved meetings ✅ → ICS ✅ → MBA catalog ✅ → portal catalog ◐ (app
+side done, snapshot pending) → mobile),
 with design decisions, data formats, a consolidated backlog and acceptance
 criteria. Read it before starting any of those features.
 
@@ -67,9 +68,13 @@ PLANNING.md      Roadmap + backlog for the next feature rounds (read before buil
 data/
   holidays.json      University holidays (one entry per date), curated from the academic calendar
   catalog-mba.json   MBA exchange-list catalog (15 courses + add/drop deadlines), generated
+  catalog-portal.json  OPTIONAL portal snapshot (~5,000 rows) — absent until Oskar runs the scraper
 tools/
   build-mba-catalog.py  Rebuilds catalog-mba.json from the two PDFs (pdfplumber); the schedule
                         grid, short descriptions and notes are transcribed by hand inside it
+  portal-scrape.js      Paste into the browser console on the portal's "Query courses open this
+                        semester" page (logged in) → downloads catalog-portal.json. Reads the
+                        page's embedded `var gridData = […]`; throttled; resumable
 assets/          Help screenshots, sample .xls, the two MBA PDFs, academic calendar PNG
                  (see assets/README.md)
 _Archive/        Untracked (.gitignore): old files, portal dump, JSON exports
@@ -98,8 +103,10 @@ js/
                  paste + xls modals, shared import preview with "Add selected"
   xlsImport.js   Reads the portal's "Export to XLS" (binary BIFF8, no library):
                  OLE2 container → BIFF records → SST → day×period grid → courses
-  catalog.js     Catalog tab: lazy fetch of data/catalog-mba.json, search/filters incl.
-                 "Fits my plan", cards with clash hints, addFromCatalog() (id cat-<number>)
+  catalog.js     Catalog tab: lazy fetch of catalog-mba.json (+ catalog-portal.json if present),
+                 mergeCatalogSources() by course number, search/filters (source, programme,
+                 dept, weekday, block, "Fits my plan"), cards with clash hints, "Show more"
+                 paging, addFromCatalog() (id cat-<key>, key = number or number-seq)
   icsExport.js   icsOccurrences() (holidays skipped, overrides on their new date), buildICS(),
                  deliverICS() (Web Share on phones, download elsewhere), settings modal with
                  live "N events · M skipped" summary; state.icsSeq bumps SEQUENCE per export
@@ -112,6 +119,10 @@ js/
 Load order (plain scripts): `core` → `history` → `calendar` → `parser` →
 `weekView` → `summary` → `courseList` → `archive` → `form` → `catalog` →
 `xlsImport` → `icsExport` → `printView` → `dataShare` → `main`.
+
+**Per-slot weeks:** never call `parseWeeks(c.weeks)` to decide when a
+meeting happens — use `slotWeeks(c, slot)` / `courseEvents(c)[i].weeks`.
+`c.weeks` stays the union for list/strip/sort.
 
 **Mutation rule:** never assign `state.courses`/`state.overrides` or mutate a
 course object in place outside `load()`. Build a new array/object and call
@@ -129,11 +140,13 @@ change undoable. Follow with `toastUndo(msg)`.
                                   // hand-typed — only parser/import set it
   credits: 1,
   instructor, dept, lang, room,
-  weeks: "1-3,5",              // semester weeks (1-18), parsed by parseWeeks(); applies
-                               // to ALL slots (per-slot weeks planned, see PLANNING.md)
+  weeks: "1-3,5",              // semester weeks (1-18), parsed by parseWeeks(). This is the
+                               // UNION over all slots; a slot may carry its own `weeks`
   status: "booked",            // booked | bid | option | out ("Dropped" in the UI)
-  slots: [ {day: 1, start: "08:00", end: "11:25", block: 1} ],  // block is optional
-                               // (custom times have none); one entry per weekly meeting
+  slots: [ {day: 1, start: "08:00", end: "11:25", block: 1, weeks: "1-8"} ],
+                               // one entry per weekly meeting; block optional (custom times),
+                               // weeks optional (only when this meeting differs from the
+                               // course's) — always read via slotWeeks(course, slot)
   note: "...",
   catalogRef: { source: "mba", key: "80517022" }   // only on courses added from the catalog;
                                                    // such courses have id "cat-<number>"

@@ -57,8 +57,8 @@ function icsOccurrences(opts){
   const courseIds = opts.courseIds;
   const rows = [];
   state.courses.filter(c => courseIds.has(c.id)).forEach(c=>{
-    const weeks = parseWeeks(c.weeks).filter(w => w>=opts.weekFrom && w<=opts.weekTo);
     (c.slots||[]).forEach((slot, si)=>{
+      const weeks = slotWeeks(c, slot).filter(w => w>=opts.weekFrom && w<=opts.weekTo);
       weeks.forEach(w=>{
         const ov = overrideFor(c.id, si, w);
         const hol = holidayOn(w, +slot.day);

@@ -29,6 +29,13 @@ function addSlotRow(slot){
   wrap.appendChild(t1); wrap.appendChild(el("span","time-dash","–")); wrap.appendChild(t2);
   fTime.appendChild(wrap); row.appendChild(fTime);
 
+  // Weeks for this meeting only (optional — portal rows like "1-6(week 1-8),2-6(week 9-16)")
+  const fWk = el("label","field field-slotweeks"); fWk.appendChild(el("span",null,"Weeks (this meeting)"));
+  const wkInp = document.createElement("input");
+  wkInp.type = "text"; wkInp.placeholder = "same as course"; wkInp.value = (slot && slot.weeks) || "";
+  wkInp.title = "Leave empty unless this meeting runs in different weeks than the course's Weeks field";
+  fWk.appendChild(wkInp); row.appendChild(fWk);
+
   // Remove
   const rm = el("button","btn danger small slot-remove","Remove");
   rm.addEventListener("click", ()=>row.remove());
@@ -52,7 +59,10 @@ function addSlotRow(slot){
   row._read = () => {
     const blk = bSel.value ? +bSel.value : undefined;
     const b = BLOCKS.find(x=>x.n===blk);
-    return { day:+daySel.value, start: b ? b.start : t1.value, end: b ? b.end : t2.value, block: blk };
+    const out = { day:+daySel.value, start: b ? b.start : t1.value, end: b ? b.end : t2.value, block: blk };
+    const wk = wkInp.value.trim();
+    if(wk && parseWeeks(wk).length) out.weeks = wk;
+    return out;
   };
   host.appendChild(row);
 }
@@ -84,7 +94,7 @@ function fillForm(c){
   if(lead){
     lead.textContent = c
       ? "Editing “"+(c.titleEn||c.titleCn||"this course")+"”. Change anything below, then Save course — or Delete course to remove it."
-      : "Enter a course by hand. Only a title, its credits, and one meeting time are required; everything else is optional. Already have one? Click any course in the Course list to edit it here — or use the buttons on the right to import.";
+      : "Enter a course by hand. Only a title, its credits, and one meeting time are required; everything else is optional. Already have one? Click any course under My courses to edit it here — or use the buttons on the right to import.";
   }
 }
 

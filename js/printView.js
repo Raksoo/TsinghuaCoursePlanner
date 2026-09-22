@@ -24,8 +24,7 @@ function renderPrintSheet(opts){
 
   const events = [];
   state.courses.filter(c=>courseIds.has(c.id)).forEach(c=>{
-    if(week !== "all" && !parseWeeks(c.weeks).includes(week)) return;
-    courseEvents(c).forEach(ev=>events.push(ev));
+    courseEvents(c).forEach(ev=>{ if(week==="all" || ev.weeks.includes(week)) events.push(ev); });
   });
 
   let maxDay = 5;
@@ -177,7 +176,7 @@ function renderPrintTimeGrid(host, events, maxDay, week, clashes){
       // In "All weeks", cards in the same slot rarely all run the same
       // weeks — without this it reads as if every course met simultaneously,
       // every week, instead of showing the semester's heaviest possible load.
-      if(week==="all") card.appendChild(el("span","pt-m pt-wk", "Weeks "+(c.weeks||"—")));
+      if(week==="all") card.appendChild(el("span","pt-m pt-wk", "Weeks "+(ev.weeksText||"—")));
       if(ov) card.appendChild(el("span","pt-m pt-flag", overrideBadge(ov)));
       else if(hol) card.appendChild(el("span","pt-m pt-flag", "Holiday — no class"));
       col.appendChild(card);
