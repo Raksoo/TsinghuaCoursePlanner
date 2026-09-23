@@ -202,22 +202,50 @@ textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Men
 #catalogSearch{width:260px;max-width:100%}
 #catalogDept{max-width:260px}
 .cat-empty{padding:28px;text-align:center;color:var(--muted);font-size:13.5px;background:var(--card);border:1px solid var(--line);border-radius:12px}
-.tablewrap.catalog table{min-width:1100px}
+.tablewrap.catalog table{min-width:980px;table-layout:fixed}
+.tablewrap.catalog td{overflow:hidden;text-overflow:ellipsis}
+.tablewrap.catalog .cat-badge{max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.tablewrap.catalog tr.cat-row.open td{background:var(--purple-soft)}
+.tablewrap.catalog tr.cat-details-row td{user-select:text}
+.cat-close{float:right;border:0;background:transparent;color:var(--purple);font-size:12px;font-weight:600;cursor:pointer;padding:0 4px}
+.tablewrap.catalog th,.tablewrap.catalog td{padding:7px 10px;font-size:13px}
 .tablewrap.catalog td.time-cell{white-space:nowrap;min-width:0}
-.tablewrap.catalog td:nth-child(8){min-width:140px}
-.tablewrap.catalog td:nth-child(9){white-space:nowrap}
+.tablewrap.catalog tr.cat-row td:last-child{white-space:nowrap}
+.cat-time-line{display:block}
+.cat-room{display:block;color:var(--muted);font-size:12px}
+.cat-title-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
+.cat-flags{display:flex;gap:4px;margin-top:3px;flex-wrap:wrap}
+.cat-flag{font-size:10.5px;font-weight:640;padding:0 7px;border-radius:999px;cursor:help;line-height:1.6}
+.cat-flag.clash{background:var(--danger-bg);color:var(--danger)}
+.cat-flag.remark{background:#fbf0dc;color:#9a5b06}
+.cat-both-titles{margin:0 0 6px;color:var(--muted)}
+.cat-pager{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.cat-pager-info{font-size:12.5px;color:var(--muted)}
+.cat-pager-nav{display:flex;align-items:center;gap:6px}
+.cat-pager-mid{font-size:13px;margin:0 6px;white-space:nowrap}
+.cat-pager-input{width:64px;min-width:0;height:32px;padding:4px 6px;text-align:center;margin:0 4px}
+#panel-catalog .bar .viewtoggle{height:38px}
+#panel-catalog .bar .viewtoggle .vt{display:inline-flex;align-items:center}
 .tablewrap.catalog tbody tr.expandable{cursor:pointer}
 .tablewrap.catalog tbody tr.expandable:hover{background:var(--purple-soft)}
 .tablewrap.catalog tr.inplan td{background:#fbfafc}
 .tablewrap.catalog tr.inplan .title{color:var(--muted)}
-.tablewrap.catalog .cat-td-title{min-width:260px}
+.tablewrap.catalog .cat-td-title{white-space:normal}
 .tablewrap.catalog td.muted{color:var(--muted);font-style:italic}
 .cat-caret{color:var(--purple-mid);font-size:11px}
 .cat-badge{display:inline-block;font-size:11px;font-weight:620;padding:1px 8px;border-radius:999px;background:var(--purple-soft);color:var(--purple);white-space:nowrap}
 .cat-badge.prog-MiM,.cat-badge.prog-MoF{background:#fbf0dc;color:#9a5b06}
 .cat-badge.prog-Chinese{background:#e2f1ea;color:#186b4d}
 .cat-badge.prog-Portal{background:#eef0f4;color:#3c3547;font-weight:560}
-.cat-inplan{font-size:12px;font-weight:620;color:var(--s-booked);white-space:nowrap;align-self:center}
+.cat-status{font-size:12px;font-weight:620;white-space:nowrap;align-self:center}
+.cat-status.booked{color:var(--s-booked)} .cat-status.bid{color:var(--s-bid)} .cat-status.option{color:var(--s-option)} .cat-status.out{color:var(--s-out)}
+.linkbtn{border:0;background:transparent;color:var(--purple);font-size:12px;font-weight:560;cursor:pointer;padding:0}
+.linkbtn:hover{text-decoration:underline}
+.cat-pager-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.cat-pager-sizes{font-size:12.5px;color:var(--muted);display:inline-flex;align-items:center;gap:2px}
+.cat-size{border:1px solid transparent;background:transparent;color:var(--muted);font-size:12.5px;padding:2px 7px;border-radius:6px;cursor:pointer}
+.cat-size:hover{color:var(--purple)}
+.cat-size.on{background:var(--purple-soft);color:var(--purple);font-weight:640;border-color:var(--line-strong)}
 .cat-clash-inline{display:block;margin-top:3px;font-size:12px;color:var(--danger)}
 .cat-remarks-inline{display:block;margin-top:3px;font-size:12px;color:#9a5b06}
 .cat-details-row td{background:#faf7fc;padding:10px 16px 14px 34px}
@@ -227,7 +255,6 @@ textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Men
 .cat-facts dt{color:var(--muted);font-weight:560}
 .cat-facts dd{margin:0}
 .cat-link{display:inline-block;margin-top:8px;font-size:12.5px;color:var(--purple);font-weight:560}
-.cat-more{display:block;margin:12px auto 0}
 
 /* Holidays & moved meetings (calendar.js) */
 .dayhead.holiday{background:#fdf3f3}

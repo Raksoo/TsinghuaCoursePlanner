@@ -1,3 +1,7 @@
 _Archive/
 .DS_Store
-data/
+# data/ stays local (portal snapshot) — except the small reference files listed below
+data/*
+!data/departments.json
+!data/holidays.json
+!data/catalog-mba.json

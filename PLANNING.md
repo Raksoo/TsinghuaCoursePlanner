@@ -637,14 +637,18 @@ jeder Änderung, Pixelvergleich; Abweichung = Fehler.
    `max-height: 100dvh`, obere Ecken rund, Buttons unten fixiert.
 6. **Katalog (Phase 4/5):** Karten sind schon mobil; nur Filterzeile
    scrollbar machen.
-7. **iOS-Spezifika:** `font-size ≥ 16px` in Inputs (sonst zoomt Safari beim
+7. **Katalog auf dem Handy:** Clash-Details und Remarks sind auf dem Desktop
+   nur als Tooltip erreichbar (kein Hover auf Touch) → im Detailbereich der
+   Zeile ausschreiben; Tabelle als Karten- oder 2-Spalten-Layout, Pager
+   bleibt.
+8. **iOS-Spezifika:** `font-size ≥ 16px` in Inputs (sonst zoomt Safari beim
    Fokus), `viewport-fit=cover` + `env(safe-area-inset-bottom)` für Badge und
    Sheets, `dvh` statt `vh`, Touch-Ziele ≥ 44 px, `-webkit-tap-highlight-color`.
-8. **ICS-Handoff** über Share-Sheet (Phase 3).
-9. **PWA light:** `manifest.json` + `apple-touch-icon` + `theme-color`, damit
+9. **ICS-Handoff** über Share-Sheet (Phase 3).
+10. **PWA light:** `manifest.json` + `apple-touch-icon` + `theme-color`, damit
    „Zum Home-Bildschirm" ein Icon und Vollbild ergibt. Kein Service Worker.
    Erledigt nebenbei das fehlende Favicon.
-10. **Print** bleibt unberührt (eigener `@media print`-Block).
+11. **Print** bleibt unberührt (eigener `@media print`-Block).
 
 **Umsetzung.** Reihenfolge: Header/Tabs → Week View kompakt + Sheet → Liste
 → Modals → iOS-Details → PWA light. Jeder Schritt mit Desktop-Screenshot-Diff.
@@ -699,7 +703,11 @@ Offen, noch nicht eingeplant — sortiert nach Nähe zum Scope:
   nutzt denselben Mechanismus wie Phase 2.
 - **Katalog: „Take catalog values"** pro Kurs mit `catalogRef`, wenn Snapshot
   und Plan auseinanderlaufen (siehe Phase 5, Abschnitt Aktualisierung).
-- **G — Alternative Sections bei Clash** (Phase 5, optional).
+- **G — Alternative Sections bei Clash** (Phase 5, optional). Vorstufe:
+  Badge „N sections" an Katalogzeilen mit mehreren Sequences (427
+  Kursnummern im Snapshot), Klick filtert auf die Nummer.
+- **Katalog: Default-Sortierung** (MBA zuerst, dann Portal nach Nummer) —
+  Alternative alphabetisch; offen.
 - **Klick auf leeren Block → Katalog vorgefiltert** (H, Ausbaustufe).
 - **Undo-History über Reload hinweg** (sessionStorage) — nur falls es im
   Alltag stört, dass ⌘Z nach einem Reload leer ist.

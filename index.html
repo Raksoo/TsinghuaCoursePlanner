@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tsinghua SEM Course Planner — Fall 2026</title>
-<link rel="stylesheet" href="styles.css?v=20260922e">
+<link rel="stylesheet" href="styles.css?v=20260922k">
 </head>
 <body>
 <header class="top">
@@ -87,22 +87,15 @@
         <span>Search</span>
         <input type="text" id="catalogSearch" placeholder="Title, number, instructor">
       </label>
-      <label class="field" id="catalogSourceField" hidden>
-        <span>Source</span>
-        <select id="catalogSource">
-          <option value="">All</option>
-          <option value="mba">MBA exchange list</option>
-          <option value="portal">Portal (all departments)</option>
-        </select>
-      </label>
       <label class="field">
-        <span>Programme</span>
-        <select id="catalogProgram">
+        <span>Scope</span>
+        <select id="catalogScope">
           <option value="">All</option>
-          <option value="MBA">MBA</option>
-          <option value="MiM">Course of MiM</option>
-          <option value="MoF">Course of MoF</option>
-          <option value="Chinese">Chinese language</option>
+          <option value="mba-all">MBA exchange list (all)</option>
+          <option value="MBA">— MBA courses</option>
+          <option value="MiM">— Courses of MiM</option>
+          <option value="MoF">— Courses of MoF</option>
+          <option value="Chinese">— Chinese language</option>
           <option value="Portal">Portal only</option>
         </select>
       </label>
@@ -138,13 +131,22 @@
         <div class="chiprow">
           <label class="chip"><input type="checkbox" id="catalogFits"><span>Fits my plan</span></label>
           <label class="chip"><input type="checkbox" id="catalogHideInPlan"><span>Hide courses already in my plan</span></label>
+          <label class="chip"><input type="checkbox" id="catalogFixedTime" checked><span>Only courses with a fixed time</span></label>
         </div>
       </div>
-      <div class="field cat-count-field"><span>Showing</span><b id="catalogCount">—</b></div>
+      <div class="field">
+        <span>Title</span>
+        <div class="viewtoggle" id="catalogTitleLang">
+          <button type="button" class="vt" data-lang="en" aria-pressed="true">English</button>
+          <button type="button" class="vt" data-lang="cn" aria-pressed="false">中文</button>
+        </div>
+      </div>
+      <div class="field cat-count-field"><span>Matches <button type="button" class="linkbtn" id="catalogReset" hidden>· reset filters</button></span><b id="catalogCount">—</b></div>
     </div>
     <div id="catalogList" class="cat-list"></div>
     <p class="hint" style="margin-top:10px"><strong>Fits my plan</strong> hides courses that overlap a booked or bidding course in the
-      same week. Option courses are not considered, so you can compare alternatives side by side.</p>
+      same week (Option courses are not considered, so you can compare alternatives side by side).
+      <strong>Only courses with a fixed time</strong> hides portal rows without a weekday/block — theses, internships and the like.</p>
   </section>
 
   <!-- ============ COURSE LIST ============ -->
@@ -589,20 +591,20 @@ School of Economics and Management
   </div>
 </div>
 
-<script src="js/core.js?v=20260922e"></script>
-<script src="js/history.js?v=20260922e"></script>
-<script src="js/calendar.js?v=20260922e"></script>
-<script src="js/parser.js?v=20260922e"></script>
-<script src="js/weekView.js?v=20260922e"></script>
-<script src="js/summary.js?v=20260922e"></script>
-<script src="js/courseList.js?v=20260922e"></script>
-<script src="js/archive.js?v=20260922e"></script>
-<script src="js/form.js?v=20260922e"></script>
-<script src="js/catalog.js?v=20260922e"></script>
-<script src="js/xlsImport.js?v=20260922e"></script>
-<script src="js/icsExport.js?v=20260922e"></script>
-<script src="js/printView.js?v=20260922e"></script>
-<script src="js/dataShare.js?v=20260922e"></script>
-<script src="js/main.js?v=20260922e"></script>
+<script src="js/core.js?v=20260922k"></script>
+<script src="js/history.js?v=20260922k"></script>
+<script src="js/calendar.js?v=20260922k"></script>
+<script src="js/parser.js?v=20260922k"></script>
+<script src="js/weekView.js?v=20260922k"></script>
+<script src="js/summary.js?v=20260922k"></script>
+<script src="js/courseList.js?v=20260922k"></script>
+<script src="js/archive.js?v=20260922k"></script>
+<script src="js/form.js?v=20260922k"></script>
+<script src="js/catalog.js?v=20260922k"></script>
+<script src="js/xlsImport.js?v=20260922k"></script>
+<script src="js/icsExport.js?v=20260922k"></script>
+<script src="js/printView.js?v=20260922k"></script>
+<script src="js/dataShare.js?v=20260922k"></script>
+<script src="js/main.js?v=20260922k"></script>
 </body>
 </html>

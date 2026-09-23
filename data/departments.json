@@ -1,0 +1,369 @@
+{
+ "source": "Portal filter 'Course department/school/college', 2026-09-21",
+ "departments": [
+  {
+   "code": "000",
+   "name": "School of Architecture"
+  },
+  {
+   "code": "001",
+   "name": "Department of Urban Planning & Design"
+  },
+  {
+   "code": "002",
+   "name": "Department of Architecture"
+  },
+  {
+   "code": "003",
+   "name": "Department of Civil Engineering"
+  },
+  {
+   "code": "004",
+   "name": "Department of Hydraulic Engineering"
+  },
+  {
+   "code": "005",
+   "name": "School of Environment"
+  },
+  {
+   "code": "012",
+   "name": "Department of Mechanical Engineering"
+  },
+  {
+   "code": "013",
+   "name": "Department of Precision Instrument"
+  },
+  {
+   "code": "014",
+   "name": "Department of Energy and Power Engineering"
+  },
+  {
+   "code": "015",
+   "name": "School of Vehicle and Mobility"
+  },
+  {
+   "code": "016",
+   "name": "Department of Industrial Engineering"
+  },
+  {
+   "code": "022",
+   "name": "Department of Electrical Engineering"
+  },
+  {
+   "code": "023",
+   "name": "Department of Electronic Engineering"
+  },
+  {
+   "code": "024",
+   "name": "Department of Computer Science and Technology"
+  },
+  {
+   "code": "025",
+   "name": "Department of Automation"
+  },
+  {
+   "code": "026",
+   "name": "School of Integrated Circuits"
+  },
+  {
+   "code": "031",
+   "name": "School of Aerospace Engineering"
+  },
+  {
+   "code": "032",
+   "name": "Department of Engineering Physics"
+  },
+  {
+   "code": "034",
+   "name": "Department of Chemical Engineering"
+  },
+  {
+   "code": "035",
+   "name": "School of Materials Science and Engineering"
+  },
+  {
+   "code": "041",
+   "name": "School of Sciences"
+  },
+  {
+   "code": "042",
+   "name": "Department of Mathematical Sciences"
+  },
+  {
+   "code": "043",
+   "name": "Department of Physics"
+  },
+  {
+   "code": "044",
+   "name": "Department of Chemistry"
+  },
+  {
+   "code": "045",
+   "name": "School of Life Sciences"
+  },
+  {
+   "code": "046",
+   "name": "Department of Earth System Science"
+  },
+  {
+   "code": "047",
+   "name": "Institute for Interdisciplinary Information Sciences"
+  },
+  {
+   "code": "048",
+   "name": "Chen-Ning Yang Institute for Advanced Study"
+  },
+  {
+   "code": "051",
+   "name": "School of Economics and Management"
+  },
+  {
+   "code": "059",
+   "name": "School of Public Policy and Management"
+  },
+  {
+   "code": "060",
+   "name": "PBC School of Finance"
+  },
+  {
+   "code": "063",
+   "name": "Department of Chinese Language and Literature"
+  },
+  {
+   "code": "064",
+   "name": "Department of Foreign Languages and Literatures"
+  },
+  {
+   "code": "066",
+   "name": "School of Law"
+  },
+  {
+   "code": "067",
+   "name": "School of Journalism and Communication"
+  },
+  {
+   "code": "068",
+   "name": "School of Marxism"
+  },
+  {
+   "code": "069",
+   "name": "School of Humanities"
+  },
+  {
+   "code": "070",
+   "name": "School of Social Sciences"
+  },
+  {
+   "code": "072",
+   "name": "Division of Sports Science and physical education"
+  },
+  {
+   "code": "075",
+   "name": "Library"
+  },
+  {
+   "code": "078",
+   "name": "Art Center"
+  },
+  {
+   "code": "080",
+   "name": "Academy of Arts & Design"
+  },
+  {
+   "code": "088",
+   "name": "Department of Statistics and Data Science"
+  },
+  {
+   "code": "090",
+   "name": "School of Civil Engineering"
+  },
+  {
+   "code": "091",
+   "name": "Department of Construction Management"
+  },
+  {
+   "code": "092",
+   "name": "Department of Astronomy"
+  },
+  {
+   "code": "093",
+   "name": "School of Safety Science"
+  },
+  {
+   "code": "094",
+   "name": "College of AI"
+  },
+  {
+   "code": "095",
+   "name": "Department of Psychological and Cognitive Sciences"
+  },
+  {
+   "code": "096",
+   "name": "Vanke School of Public Health"
+  },
+  {
+   "code": "097",
+   "name": "Schwarzman College，Tsinghua University"
+  },
+  {
+   "code": "099",
+   "name": "Department of Building Science"
+  },
+  {
+   "code": "101",
+   "name": "Institute of Nuclear and New Energy Technology"
+  },
+  {
+   "code": "103",
+   "name": "School of Education"
+  },
+  {
+   "code": "151",
+   "name": "Fundamental Industry Training Center of Tsinghua University"
+  },
+  {
+   "code": "155",
+   "name": "Electrical Engineering and Electronics Experiment Teaching Center"
+  },
+  {
+   "code": "207",
+   "name": "Student Department of Party Committee"
+  },
+  {
+   "code": "209",
+   "name": "Military Office of Party Committee"
+  },
+  {
+   "code": "253",
+   "name": "Office of International Affairs/Office of Hong Kong,Macao and Taiwan Affairs"
+  },
+  {
+   "code": "254",
+   "name": "Academic Affairs Office"
+  },
+  {
+   "code": "255",
+   "name": "Graduate School"
+  },
+  {
+   "code": "305",
+   "name": "Tsinghua University Hospital"
+  },
+  {
+   "code": "402",
+   "name": "School of Pharmaceutical Sciences"
+  },
+  {
+   "code": "405",
+   "name": "School of Clinical Medicine"
+  },
+  {
+   "code": "410",
+   "name": "School of Software"
+  },
+  {
+   "code": "412",
+   "name": "Institute for Network Sciences and Cyberspace"
+  },
+  {
+   "code": "413",
+   "name": "Institute for International and Area Studies"
+  },
+  {
+   "code": "415",
+   "name": "Institute for Aero Engine"
+  },
+  {
+   "code": "420",
+   "name": "Language Centre of Tsinghua University"
+  },
+  {
+   "code": "470",
+   "name": "Xinya College"
+  },
+  {
+   "code": "471",
+   "name": "Zhili College"
+  },
+  {
+   "code": "472",
+   "name": "Rixin College"
+  },
+  {
+   "code": "473",
+   "name": "Weiyang College"
+  },
+  {
+   "code": "474",
+   "name": "Tanwei College"
+  },
+  {
+   "code": "475",
+   "name": "Xingjian College"
+  },
+  {
+   "code": "476",
+   "name": "Qiuzhen College"
+  },
+  {
+   "code": "477",
+   "name": "Weixian College"
+  },
+  {
+   "code": "478",
+   "name": "Xiuzhong College"
+  },
+  {
+   "code": "479",
+   "name": "Dushi College"
+  },
+  {
+   "code": "480",
+   "name": "Zhishan College"
+  },
+  {
+   "code": "481",
+   "name": "Wuqiong College"
+  },
+  {
+   "code": "482",
+   "name": "Zijing College"
+  },
+  {
+   "code": "483",
+   "name": "Ziqiang College"
+  },
+  {
+   "code": "484",
+   "name": "Shuimu College"
+  },
+  {
+   "code": "492",
+   "name": "Teaching Center of Mathematics"
+  },
+  {
+   "code": "500",
+   "name": "Tsinghua Medicine"
+  },
+  {
+   "code": "501",
+   "name": "School of Basic Medical Sciences"
+  },
+  {
+   "code": "502",
+   "name": "School of Biomedical Engineering"
+  },
+  {
+   "code": "503",
+   "name": "School of Healthcare Management"
+  },
+  {
+   "code": "599",
+   "name": "Tsinghua Shenzhen International Graduate School"
+  },
+  {
+   "code": "601",
+   "name": "Global Innovation eXchange Institute，Tsinghua University"
+  }
+ ]
+}

@@ -223,6 +223,13 @@ function init(){
     if(ok) closeICSModal();
   });
 
+  // "Move this meeting" modal (calendar.js)
+  $("#moveSave").addEventListener("click", saveMoveModal);
+  $("#moveClear").addEventListener("click", clearMoveModal);
+  $("#moveCancel").addEventListener("click", closeMoveModal);
+  $("#moveCancelled").addEventListener("change", syncMoveFields);
+  $("#moveModalOverlay").addEventListener("click", e=>{ if(e.target.id==="moveModalOverlay") closeMoveModal(); });
+
   $("#printBtn").addEventListener("click", openPrintModal);
   $("#printModalCancel").addEventListener("click", closePrintModal);
   $("#printModalOverlay").addEventListener("click", e=>{ if(e.target.id==="printModalOverlay") closePrintModal(); });
