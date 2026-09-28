@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tsinghua SEM Course Planner — Fall 2026</title>
-<link rel="stylesheet" href="styles.css?v=20260928r">
+<link rel="stylesheet" href="styles.css?v=20260928u">
 </head>
 <body>
 <header class="top">
@@ -226,10 +226,21 @@
       </div>
     </div>
 
-    <div class="or-divider"><span>or enter it manually below</span></div>
+    <div class="add-search">
+      <label class="field" for="addSearch">
+        <span>Search the course catalog</span>
+        <input type="search" id="addSearch" placeholder="Course number, title or instructor…"
+               autocomplete="off" spellcheck="false">
+        <small class="fieldhint">Add a course in one click, or open it in the form below to adjust it first.</small>
+      </label>
+      <div id="addSearchResults" class="add-results"></div>
+    </div>
 
-    <div class="form">
+    <details class="manual-box" id="manualBox">
+      <summary>Enter a course by hand</summary>
+      <div class="form">
       <input type="hidden" id="fId">
+      <div id="catalogBandHost"></div>
       <div id="courseDetailHost"></div>
 
       <!-- 1 · What is the course? -->
@@ -290,7 +301,8 @@
         <button class="btn ghost" id="resetForm">Clear form</button>
         <button class="btn danger" id="deleteCourse" style="display:none">Delete course</button>
       </div>
-    </div>
+      </div>
+    </details>
   </section>
 
   <!-- ============ DATA ============ -->
@@ -631,25 +643,26 @@ School of Economics and Management
   </div>
 </div>
 
-<script src="js/core.js?v=20260928r"></script>
-<script src="js/store.js?v=20260928r"></script>
-<script src="js/history.js?v=20260928r"></script>
-<script src="js/calendar.js?v=20260928r"></script>
-<script src="js/parser.js?v=20260928r"></script>
-<script src="js/weekView.js?v=20260928r"></script>
-<script src="js/summary.js?v=20260928r"></script>
-<script src="js/courseList.js?v=20260928r"></script>
-<script src="js/archive.js?v=20260928r"></script>
-<script src="js/form.js?v=20260928r"></script>
-<script src="js/scheduleParse.js?v=20260928r"></script>
-<script src="js/catalog.js?v=20260928r"></script>
-<script src="js/scheduleImport.js?v=20260928r"></script>
-<script src="js/portalImport.js?v=20260928r"></script>
-<script src="js/importPreview.js?v=20260928r"></script>
-<script src="js/xlsImport.js?v=20260928r"></script>
-<script src="js/icsExport.js?v=20260928r"></script>
-<script src="js/printView.js?v=20260928r"></script>
-<script src="js/dataShare.js?v=20260928r"></script>
-<script src="js/main.js?v=20260928r"></script>
+<script src="js/core.js?v=20260928u"></script>
+<script src="js/store.js?v=20260928u"></script>
+<script src="js/history.js?v=20260928u"></script>
+<script src="js/calendar.js?v=20260928u"></script>
+<script src="js/parser.js?v=20260928u"></script>
+<script src="js/weekView.js?v=20260928u"></script>
+<script src="js/summary.js?v=20260928u"></script>
+<script src="js/courseList.js?v=20260928u"></script>
+<script src="js/archive.js?v=20260928u"></script>
+<script src="js/form.js?v=20260928u"></script>
+<script src="js/scheduleParse.js?v=20260928u"></script>
+<script src="js/catalog.js?v=20260928u"></script>
+<script src="js/addTab.js?v=20260928u"></script>
+<script src="js/scheduleImport.js?v=20260928u"></script>
+<script src="js/portalImport.js?v=20260928u"></script>
+<script src="js/importPreview.js?v=20260928u"></script>
+<script src="js/xlsImport.js?v=20260928u"></script>
+<script src="js/icsExport.js?v=20260928u"></script>
+<script src="js/printView.js?v=20260928u"></script>
+<script src="js/dataShare.js?v=20260928u"></script>
+<script src="js/main.js?v=20260928u"></script>
 </body>
 </html>

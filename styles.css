@@ -429,6 +429,8 @@ select.statussel.out{background:var(--s-out-bg);border-color:var(--s-out);color:
 .slotrow .field-time[hidden]{display:none}
 .slotrow .field-slotweeks{flex:0 1 150px}
 .slotrow .field-slotweeks input{min-width:0}
+.slotrow .field-slotroom{flex:1 1 170px}
+.slotrow .field-slotroom input{min-width:0}
 .time-wrap{display:flex;align-items:center;gap:7px}
 .time-wrap input{min-width:0}
 .time-dash{color:var(--muted)}
@@ -483,7 +485,7 @@ textarea.note-area{min-height:70px;font-family:inherit;font-size:14px;line-heigh
 
 .hint-block{margin:10px 0 0;padding:8px 11px;background:var(--purple-soft);border-radius:8px}
 code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;box-shadow:0 6px 20px rgba(28,20,36,.25);z-index:50;display:inline-flex;align-items:center;gap:14px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;box-shadow:0 6px 20px rgba(28,20,36,.25);z-index:90;display:inline-flex;align-items:center;gap:14px}
 .toast-action{background:transparent;border:1px solid rgba(255,255,255,.42);color:#fff;border-radius:999px;padding:3px 13px;font-size:12.5px;font-weight:640}
 .toast-action:hover{background:rgba(255,255,255,.16)}
 @media (prefers-reduced-motion:no-preference){
@@ -495,11 +497,16 @@ code.k{background:var(--purple-soft);border-radius:5px;padding:1px 5px;font-size
 .modal-overlay{
   position:fixed;inset:0;background:rgba(28,20,36,.45);z-index:70;
   display:flex;align-items:center;justify-content:center;padding:20px;
+  overscroll-behavior:contain;
 }
+/* Scrolling with the pointer over a dialog used to move the week grid
+   behind it as soon as the dialog itself had nothing left to scroll (or
+   the pointer sat on a part of it that does not scroll). */
+body.modal-open{overflow:hidden}
 .modal-overlay[hidden]{display:none}
 .modal{
   background:var(--card);border-radius:14px;max-width:560px;width:100%;
-  max-height:88vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(28,20,36,.35);
+  max-height:88vh;overflow-y:auto;overscroll-behavior:contain;padding:22px 24px;box-shadow:0 20px 60px rgba(28,20,36,.35);
 }
 .modal.modal-wide{max-width:640px}
 .modal.modal-ics{max-width:660px}
@@ -707,6 +714,37 @@ summary.modal-section-head::before{
 .legacy-imports .hint{margin:4px 0 8px}
 .legacy-imports .btn{margin:0 6px 6px 0}
 
+/* ---------- Add tab: catalog search, manual form, catalog band ---------- */
+.add-search{margin:18px 0 4px}
+.add-search .field{max-width:520px}
+.add-results{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.add-result{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--card);
+}
+.add-result:hover{border-color:var(--purple-mid)}
+.add-result-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 280px}
+.add-result-main .title{font-weight:600;font-size:14px}
+.add-result-main .cn{font-size:12px;color:var(--muted)}
+.add-result-clash{font-size:12px;color:#a2472f;font-weight:560}
+.add-result-acts{display:flex;gap:7px;flex:none;align-items:center}
+.add-result-in{font-size:12.5px;color:var(--muted);font-weight:560}
+
+.manual-box{margin-top:18px}
+.manual-box > summary{
+  cursor:pointer;list-style:none;font-size:12.5px;font-weight:640;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.04em;padding:8px 0;
+}
+.manual-box > summary::-webkit-details-marker{display:none}
+.manual-box > summary::before{content:"▸";display:inline-block;margin-right:7px;transition:transform .12s}
+.manual-box[open] > summary::before{transform:rotate(90deg)}
+.manual-box > summary:hover{color:var(--purple)}
+
+.catalog-band{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px}
+.catalog-band-label{font-size:11.5px;font-weight:660;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.catalog-band-facts{font-size:13px;font-weight:560}
+.catalog-band .btn{margin-left:auto}
+
 @media (max-width:700px){
   .snapbar{flex-direction:column;align-items:stretch}
   .snapbar-acts{justify-content:flex-end}
@@ -715,6 +753,9 @@ summary.modal-section-head::before{
 .portal-links .hint{margin:0}
 .drag-hint{font-size:12px;font-weight:640;color:var(--purple);letter-spacing:.01em}
 .drag-hint::first-letter{font-size:15px}
+.drag-hint.flash{animation:draghint 1.1s ease-out 2}
+@keyframes draghint{0%,100%{color:var(--purple);transform:none}35%{color:#a2472f;transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){ .drag-hint.flash{animation:none;color:#a2472f} }
 .portal-substep{display:flex;gap:9px;align-items:flex-start;margin-bottom:10px}
 .portal-substep .substep{
   display:inline-flex;align-items:center;justify-content:center;

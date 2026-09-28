@@ -213,13 +213,19 @@ function portalLoginLinks(cfg){
 
 function portalRunOptions(cfg){
   const wrap = el("div","portal-run");
-  wrap.appendChild(el("div","drag-hint","⤒  drag this up into the bookmarks bar"));
+  const dragHint = el("div","drag-hint","⤒  drag this up into the bookmarks bar");
+  wrap.appendChild(dragHint);
   const bm = el("a","bookmarklet", cfg.bookmarklet);
   bm.href = bookmarkletHref(cfg);
   bm.title = "Drag me into the bookmarks bar";
   bm.draggable = true;
   bm.addEventListener("click", e=>{
     e.preventDefault();
+    /* The toast sits at the bottom of the window; the answer to a click
+       belongs where the click was, so flash the hint above the button too. */
+    dragHint.classList.remove("flash");
+    void dragHint.offsetWidth;                      // restart the animation
+    dragHint.classList.add("flash");
     toast("Drag this button into your bookmarks bar — clicking it works only on the portal page");
   });
   wrap.appendChild(bm);

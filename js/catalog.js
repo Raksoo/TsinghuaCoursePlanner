@@ -217,12 +217,16 @@ function catalogMatches(entry){
   if(f.block && !(entry.slots||[]).some(s=>+s.block===f.block)) return false;
   if(f.hideInPlan && planCourseFor(entry)) return false;
   if(f.fits && catalogClashes(entry).length) return false;
-  if(f.q){
-    const hay = [entry.titleEn, entry.titleCn, entry.number, entry.seq, entry.instructor, entry.program, entry.dept, entry.room, entry.remarks, (entry.aliases||[]).join(" ")]
-      .join(" ").toLowerCase();
-    if(!hay.includes(f.q)) return false;
-  }
+  if(f.q && !catalogHaystack(entry).includes(f.q)) return false;
   return true;
+}
+
+/* Everything a search should look at, lower-cased. Shared with the Add
+   tab's own search box (js/addTab.js) so both find the same courses. */
+function catalogHaystack(entry){
+  return [entry.titleEn, entry.titleCn, entry.number, entry.seq, entry.instructor,
+          entry.program, entry.dept, entry.room, entry.remarks, (entry.aliases||[]).join(" ")]
+    .join(" ").toLowerCase();
 }
 
 /* The portal's "Course features" column is the only language signal there

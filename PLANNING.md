@@ -1,6 +1,6 @@
 # Planung — Tsinghua Course Planner, Ausbaustufe 3
 
-Stand: 2026-09-28. Vorgänger: `_Archive/PLANNING-v1-2026-09-22.md` (Phasen 1–6
+Stand: 2026-09-28 (Phasen 0–6 fertig). Vorgänger: `_Archive/PLANNING-v1-2026-09-22.md` (Phasen 1–6
 der Ausbaustufe 2; untracked, aber in der Git-Historie unter `PLANNING.md`).
 
 Diese Datei ist die einzige Roadmap. Sie enthält **alle offenen Punkte**: die
@@ -109,9 +109,9 @@ Screenshots von B und C), `_Archive/Feature_Crawler/` (Dump von A).
 | **1** ✅ | Schedule-Scraper (Quelle B) | Liefert Raum + „was ist wirklich belegt" — die größte Informationslücke | M |
 | **2** ✅ | Schedule-Import in der App | Ohne Import nützt der Scraper nichts. Enthält den Abgleich Plan ↔ Portal | M |
 | **3** ✅ | Kursdetails zu *meinen* Kursen (Quelle C) | Nachlauf des Stundenplan-Scrapers, ~6 Seiten. Füllt Beschreibung/Prüfungsform im eigenen Plan | **S** |
-| **4** | „Add / edit course" umbauen | Erst sinnvoll, wenn Katalog + Schedule-Import stehen (Punkt 2 des Auftrags) | M |
-| **5** | Scraper von der Planner-Seite starten (Bookmarklet + Übergabe) | Bequemlichkeit; setzt fertige Scraper voraus (Punkt 3 des Auftrags) | M |
-| **6** | Testsuite | Läuft parallel ab Phase 1 mit (TDD), eigener Abschnitt wegen Setup | M |
+| **4** ✅ | „Add / edit course" umbauen | Erst sinnvoll, wenn Katalog + Schedule-Import stehen (Punkt 2 des Auftrags) | M |
+| **5** ✅ | Scraper von der Planner-Seite starten (Bookmarklet + Übergabe) | Bequemlichkeit; setzt fertige Scraper voraus (Punkt 3 des Auftrags) | M |
+| **6** ✅ | Testsuite | Läuft parallel ab Phase 1 mit (TDD), eigener Abschnitt wegen Setup | M |
 | **7** | Alternative Sections (Rest aus alt-Phase 5) | Braucht einen importierten Katalog (Phase 0) | S–M |
 | **8** | Mobile (alt-Phase 6) | Unverändert offen, zuletzt weil rein kosmetisch | M |
 
@@ -634,7 +634,28 @@ Parameter), es sind sechs GETs in derselben Session, und ein Fehlschlag kostet
 nur ein optionales Feld.
 
 
-## 7. Phase 4 — „Add / edit course" umbauen
+## 7. Phase 4 — „Add / edit course" umbauen ✅ (umgesetzt 2026-09-28)
+
+**Umgesetzt:** `js/addTab.js` (neu) — Katalogsuche direkt im Add-Tab (max. 8
+Treffer aus `CATALOG.entries`, pro Treffer Nr-Seq · CP · Zeit · Wochen ·
+Dozent, Clash-Hinweis, „Add" und **„Edit before adding"**: füllt das Formular,
+speichert nichts) und das Band „Catalog says …" über Kursen mit `catalogRef`
+mit „Use these values" (Slots/Wochen/Raum ins Formular, ohne zu speichern).
+Das Handformular liegt jetzt eingeklappt unter „Enter a course by hand" und
+öffnet sich automatisch beim Bearbeiten. Meetings-Editor: **Raum pro Zeile**
+(4.4). Geteilte Suche: `catalogHaystack()` in `catalog.js`, von Katalog-Tab
+und Add-Tab benutzt.
+
+**Dabei gefundener Bug (der eigentliche Gewinn).** `readForm()` baute den Kurs
+komplett neu aus den Formularfeldern und ersetzte damit den gespeicherten —
+`detail` (die Portal-Beschreibung), `catalogRef` und `slot.room` hatten kein
+Eingabefeld und waren nach *jeder* Bearbeitung weg, kommentarlos, mit „Course
+updated"-Toast. Jetzt merged `mergeCourseEdit(existing, fields)` auf den
+gespeicherten Kurs; ein aus dem Katalog vorbefülltes, noch nicht gespeichertes
+Formular steht in `formSource`. 4 Tests in `tests/form.test.mjs`.
+
+**Nicht gebaut:** der Katalog-Tab bleibt der Ort für Filter und Stöbern — die
+Suche im Add-Tab ist bewusst nur ein Feld, kein zweiter Katalog.
 
 ### 7.1 Problem
 
@@ -691,7 +712,18 @@ Katalog gab. Mit 5.020 Katalogkursen und Schedule-Import ist Tippen der
 
 ---
 
-## 8. Phase 5 — Scraper von der Planner-Seite starten
+## 8. Phase 5 — Scraper von der Planner-Seite starten ✅ (umgesetzt 2026-09-28)
+
+**Umgesetzt, nur anders platziert als geplant:** Die Bookmarklets stehen nicht
+in einem eigenen Abschnitt „Portal tools", sondern im geführten Import-Dialog
+selbst (`bookmarkletHref()` in `js/portalImport.js`, ein Link zum Ziehen pro
+Werkzeug, Konsolen-Fallback daneben) — dort, wo der Weg ohnehin erklärt wird.
+Einstiege: Add-Tab („Import my timetable from the Info portal"), Katalog-Tab
+(Snapshot-Statuszeile) und *Data & sharing* → „Info portal" mit beiden
+Knöpfen. Rückweg per `postMessage` mit Origin-Allowlist, `?import=` als
+Fallback, Datei-Picker/Drag-&-Drop und „Quelltext einfügen" als Notweg.
+**Offen bleibt nur, was ausschließlich am echten Portal prüfbar ist** — siehe
+den Kasten in Abschnitt 5 (Nutzergeste in Safari) und Abschnitt 13.
 
 ### 8.1 Was **nicht** geht (und warum, damit es nicht nochmal diskutiert wird)
 
@@ -787,7 +819,17 @@ Katalog-Tab): Katalog importieren (einmalig) → Stundenplan importieren
 
 ---
 
-## 9. Phase 6 — Tests (ab Phase 1 mitlaufend)
+## 9. Phase 6 — Tests (ab Phase 1 mitlaufend) ✅ (Stand 2026-09-28: 128 Tests)
+
+**Umgesetzt:** `npm test` (`node --test tests/`), Harness + linkedom +
+fake-indexeddb wie unten beschrieben, 13 Testdateien: `schedule`, `detail`,
+`store`, `catalog`, `scheduleImport`, `ics`, `storage`, `bookmarklet`,
+`parser`, `weeks`, `timezone`, `dataShare`, `form`. Über den Plan hinaus
+dazugekommen: Zeitzonensicherheit (`TZ=Europe/Berlin`), ICS-Faltung nach
+Oktetts, Export/Import-Rundlauf, Feldübernahme beim Bearbeiten.
+**Offen:** `import.test.mjs` — der `postMessage`-Empfänger (fremdes Origin
+wird ignoriert) ist noch nicht unit-getestet, nur der Code dafür steht.
+E2E (9.3) unverändert offen.
 
 Bis heute wird nur ad hoc im Browser geklickt. Mit Scrapern, Merge-Logik und
 einem Import, der bestehende Pläne anfasst, reicht das nicht mehr.
@@ -943,6 +985,16 @@ Dazu gehört auch der offene Test des iOS-Share-Sheets beim `.ics`-Export.
 - „Check enrollment status" (`xsJxs.xsJxsXjb.do?m=show`) — vermutlich
   Anmeldestatus/Warteliste. Ungeprüft, könnte `bid` vs. `booked` automatisch
   unterscheiden. Erst einen Dump ansehen.
+- **Katalogseite im Portal derzeit nicht erreichbar (28.09.2026).** „Query
+  courses open this semester" war vormittags noch da und ist abends
+  verschwunden — vermutlich mit dem Ende der Belegungsfrist abgeschaltet.
+  Folge: Der **Katalog-Scraper ist am echten Portal gerade nicht testbar**.
+  Testgrundlage bleibt der lokale Snapshot vom 22.09. (5.031 Zeilen) plus die
+  Dumps unter `_Archive/`; die Parser-Tests laufen davon unabhängig weiter.
+  Vor dem nächsten Umbau am Scraper prüfen, ob die Seite (oder der Direktlink
+  aus Abschnitt 4) wieder antwortet — und ob sie in der nächsten
+  Belegungsrunde dieselbe Struktur hat. Der Stundenplan-Scraper ist davon
+  nicht betroffen, solange „My timetable" erreichbar bleibt.
 - `data/buildings.json` (Gebäude-Glossar, Phase 1.4).
 - Capacity/Enrollment-Zahlen: auf keiner der geprüften Seiten vorhanden.
   Vermutlich nur in der Registrierungsmaske. Ungeprüft.

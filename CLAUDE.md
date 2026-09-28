@@ -147,6 +147,9 @@ js/
   archive.js     Dropped-courses archive (Restore → option / Delete)
   form.js        Add/edit form, "Meetings" slot-row editor (block or custom time),
                  paste + xls modals, shared import preview with "Add selected"
+  addTab.js      Everything above the manual form in the Add tab: the catalog search
+                 (max 8 hits, "Add" and "Edit before adding" — fills the form, saves
+                 nothing) and the "Catalog says …" band over a course with a catalogRef
   xlsImport.js   Reads the portal's "Export to XLS" (binary BIFF8, no library):
                  OLE2 container → BIFF records → SST → day×period grid → courses
   store.js       IndexedDB "thu-planner-data" for scraped snapshots: snapshotGet/Put/Clear/
@@ -190,7 +193,7 @@ js/
 
 Load order (plain scripts): `core` → `store` → `history` → `calendar` →
 `parser` → `weekView` → `summary` → `courseList` → `archive` → `form` →
-`scheduleParse` → `catalog` → `scheduleImport` → `portalImport` →
+`scheduleParse` → `catalog` → `addTab` → `scheduleImport` → `portalImport` →
 `importPreview` → `xlsImport` → `icsExport` → `printView` → `dataShare` →
 `main`.
 
@@ -206,6 +209,12 @@ also green under `America/New_York`.
 **Per-slot weeks:** never call `parseWeeks(c.weeks)` to decide when a
 meeting happens — use `slotWeeks(c, slot)` / `courseEvents(c)[i].weeks`.
 `c.weeks` stays the union for list/strip/sort.
+
+**Editing rule:** the form renders a dozen fields; a course carries more
+(`detail`, `catalogRef`, `seq`). `readForm()` therefore merges onto the stored
+course (`mergeCourseEdit`) instead of rebuilding it — otherwise editing a note
+on an imported course silently deleted the portal's description. A course
+filled in from the catalog but not saved yet lives in `formSource`.
 
 **Mutation rule:** never assign `state.courses`/`state.overrides` or mutate a
 course object in place outside `load()`. Build a new array/object and call
@@ -334,9 +343,9 @@ git add -A && git commit -m "…" && git push   # deploys via GitHub Pages in < 
 
 Code pushes never touch users' stored plans — only the app code updates.
 
-`npm test` runs the unit suite (124 tests: schedule parser, course-detail parser,
+`npm test` runs the unit suite (128 tests: schedule parser, course-detail parser,
 snapshot store, catalog merge, plan reconciliation, .ics format and folding,
 timezone safety, week display, paste parser, export/import round-trip,
-storage compatibility). Beyond that, testing is still ad hoc: drive the
+storage compatibility, form field carry-over). Beyond that, testing is still ad hoc: drive the
 live/local page with the Claude browser tools (DOM state, `buildICS()` via
 page.evaluate, PDF render for print). A Playwright E2E suite is PLANNING.md §9.3.

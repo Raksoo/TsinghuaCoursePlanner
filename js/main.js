@@ -25,6 +25,19 @@ function renderAll(){
   if(catalogStatus==="ok") renderCatalog();   // "In plan" badges follow the plan
 }
 
+/* Scrolling with the pointer over a dialog moved the page behind it — the
+   week grid jumped while the reader was looking at the import dialog. The
+   body is locked while any overlay is open. An observer keeps that in sync
+   with the `hidden` attribute instead of trusting seven pairs of
+   open/close functions to remember it (and any dialog added later). */
+function watchModalScrollLock(){
+  const overlays = [...document.querySelectorAll(".modal-overlay")];
+  const sync = ()=>document.body.classList.toggle("modal-open", overlays.some(o=>!o.hidden));
+  const obs = new MutationObserver(sync);
+  overlays.forEach(o=>obs.observe(o, {attributes:true, attributeFilter:["hidden"]}));
+  sync();
+}
+
 function init(){
   /* Naming this window lets the portal scrapers target an already-open
      planner tab (window.open(url, "thu-planner")) instead of stacking up a
@@ -34,6 +47,7 @@ function init(){
 
   load();
   importFromHash();
+  watchModalScrollLock();
 
   STATUS.forEach(s=>{
     const o1 = el("option", null, s.label); o1.value = s.id; $("#fStatus").appendChild(o1);
@@ -110,6 +124,7 @@ function init(){
   wireHelpImg("#xlsHelpImg", "#xlsHelpPlaceholder");
 
   wirePortalImport();
+  $("#addSearch").addEventListener("input", renderAddSearch);
   $("#openScheduleImportBtn").addEventListener("click", ()=>openPortalImport("schedule"));
   $("#openCatalogFromAddBtn").addEventListener("click", ()=>showPanel("catalog"));
   $("#portalScheduleBtn").addEventListener("click", ()=>openPortalImport("schedule"));

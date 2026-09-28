@@ -36,6 +36,15 @@ function addSlotRow(slot){
   wkInp.title = "Leave empty unless this meeting runs in different weeks than the course's Weeks field";
   fWk.appendChild(wkInp); row.appendChild(fWk);
 
+  // Room for this meeting only. A timetable import fills it per cell (courses
+  // do change rooms between meetings), and without a field here an edit of
+  // any other value silently threw the room away.
+  const fRm = el("label","field field-slotroom"); fRm.appendChild(el("span",null,"Room (this meeting)"));
+  const rmInp = document.createElement("input");
+  rmInp.type = "text"; rmInp.placeholder = "same as course"; rmInp.value = (slot && slot.room) || "";
+  rmInp.title = "Leave empty to use the course's Room field";
+  fRm.appendChild(rmInp); row.appendChild(fRm);
+
   // Remove
   const rm = el("button","btn danger small slot-remove","Remove");
   rm.addEventListener("click", ()=>row.remove());
@@ -62,12 +71,24 @@ function addSlotRow(slot){
     const out = { day:+daySel.value, start: b ? b.start : t1.value, end: b ? b.end : t2.value, block: blk };
     const wk = wkInp.value.trim();
     if(wk && parseWeeks(wk).length) out.weeks = wk;
+    const rmv = rmInp.value.trim();
+    if(rmv) out.room = rmv;
     return out;
   };
   host.appendChild(row);
 }
 
-function fillForm(c){
+/* What the form was filled from. A draft ("Edit before adding") is not in
+   the plan yet, so readForm() cannot look it up there — without this its
+   catalogRef would be gone the moment the course is saved. */
+let formSource = null;
+
+/* opts.draft: the form is pre-filled from the catalog but nothing is saved
+   yet, so it must read as "Add", not as "Edit" — no Delete button, no
+   "Cancel edit". */
+function fillForm(c, opts){
+  const draft = !!(opts && opts.draft);
+  formSource = c || null;
   $("#fId").value        = c ? c.id : "";
   $("#fTitleEn").value   = c ? esc(c.titleEn) : "";
   $("#fTitleCn").value   = c ? esc(c.titleCn) : "";
@@ -83,17 +104,22 @@ function fillForm(c){
   $("#slotRows").innerHTML = "";
   if(c && c.slots && c.slots.length) c.slots.forEach(addSlotRow);
   else addSlotRow();
-  $("#formTitle").textContent = c ? "Edit course" : "Add a course";
-  $("#deleteCourse").style.display = c ? "inline-block" : "none";
+  const editing = !!c && !draft;
+  $("#formTitle").textContent = editing ? "Edit course" : "Add a course";
+  $("#deleteCourse").style.display = editing ? "inline-block" : "none";
   const resetBtn = $("#resetForm");
   if(resetBtn){
-    resetBtn.textContent = c ? "Cancel edit" : "Clear form";
-    resetBtn.title = c ? "Stop editing and empty the form (the saved course is not changed)" : "Empty all fields";
+    resetBtn.textContent = editing ? "Cancel edit" : "Clear form";
+    resetBtn.title = editing ? "Stop editing and empty the form (the saved course is not changed)" : "Empty all fields";
   }
+  if(c) openManualForm();
   renderCourseDetail(c);
+  renderCatalogBand(c);
   const lead = $("#formLead");
   if(lead){
-    lead.textContent = c
+    lead.textContent = draft
+      ? "Filled in from the catalog — nothing is saved yet. Adjust anything below, then Save course."
+      : c
       ? "Editing “"+(c.titleEn||c.titleCn||"this course")+"”. Change anything below, then Save course — or Delete course to remove it."
       : "The quickest way is to let the portal fill this in for you — see the buttons on the right. "
         + "Typing a course by hand still works and is below; only a title, its credits and one meeting time are required. "
@@ -109,6 +135,16 @@ function editCourse(id){
   $("#formTitle").scrollIntoView({block:"start", behavior:"smooth"});
 }
 
+/* The form renders a dozen fields; a course can carry more. `detail` (the
+   portal's description), `catalogRef` (what the catalog matches on) and
+   `seq` have no input of their own — rebuilding the course from the form
+   alone dropped them, so editing a note on an imported course quietly
+   deleted its description and its link to the catalog. Start from the
+   stored course, overwrite only what the form manages. */
+function mergeCourseEdit(existing, fields){
+  return Object.assign({}, existing || {}, fields);
+}
+
 function readForm(){
   const slots = [...document.querySelectorAll("#slotRows .slotrow")]
     .map(r=>r._read())
@@ -117,8 +153,9 @@ function readForm(){
   // No manual "Sequence" field in the form (it's a parser/import artifact,
   // not something worth hand-typing) — carry over an existing course's
   // value untouched instead of losing it on every manual edit.
-  const existing = state.courses.find(x=>x.id===id);
-  return {
+  const existing = state.courses.find(x=>x.id===id)
+    || (formSource && formSource.id === id ? formSource : null);
+  return mergeCourseEdit(existing, {
     id,
     titleEn: $("#fTitleEn").value.trim(),
     titleCn: $("#fTitleCn").value.trim(),
@@ -133,7 +170,7 @@ function readForm(){
     status: $("#fStatus").value,
     note: $("#fNote").value.trim(),
     slots
-  };
+  });
 }
 
 /* ============================================================
