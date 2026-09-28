@@ -649,15 +649,18 @@ summary.modal-section-head::before{
    Portal import (Phase 0/1) — the snapshot bar in the catalog tab,
    the guided import dialog, and the folded-away legacy importers.
    ============================================================ */
-.snapbar{
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+/* Where the catalog comes from: one box, one row per source, so the shipped
+   MBA list and the imported portal snapshot read as two of the same thing. */
+.sources{
   border:1px solid var(--line);border-left:4px solid var(--purple-mid);
-  background:#fff;border-radius:10px;padding:10px 14px;margin:0 0 14px;font-size:13px;
+  background:#fff;border-radius:10px;margin:0 0 14px;font-size:13px;overflow:hidden;
 }
-.snapbar.empty{border-left-color:var(--purple);background:var(--purple-soft)}
-.snapbar-text{flex:1;min-width:240px;color:var(--muted);line-height:1.5}
-.snapbar-text b{color:var(--ink)}
-.snapbar-acts{display:flex;align-items:center;gap:10px}
+.source-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 14px}
+.source-row + .source-row{border-top:1px solid var(--line)}
+.source-row .txt{flex:1;min-width:240px;color:var(--muted);line-height:1.5}
+.source-row .txt b{color:var(--ink)}
+.source-acts{display:flex;align-items:center;gap:10px}
+.source-row.empty{background:var(--purple-soft)}
 
 .modal.modal-portal{max-width:780px}
 .portal-why{margin:10px 0 4px}

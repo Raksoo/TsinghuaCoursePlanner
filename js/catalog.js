@@ -268,22 +268,14 @@ function sortedEntries(rows){
 function renderCatalog(){
   const host = $("#catalogList"); if(!host) return;
   host.innerHTML = "";
-  const meta = $("#catalogMeta");
   if(catalogStatus==="loading" || catalogStatus==="idle"){ host.appendChild(el("div","cat-empty","Loading catalog…")); return; }
   if(catalogStatus==="error"){
     const n = el("div","note warn");
     n.innerHTML = "<h3>Catalog not loaded</h3>data/catalog-mba.json could not be read — open the app over http(s), not as a file.";
     host.appendChild(n); return;
   }
-  const mba = CATALOG.mba, portal = CATALOG.portal;
-  if(meta){
-    meta.innerHTML = "";
-    meta.appendChild(document.createTextNode("MBA exchange list from "+mba.snapshot+" ("+mba.courses.length+" courses · "));
-    const a1 = el("a", null, "schedule PDF"); a1.href = encodeURI(mba.files.schedule); a1.target = "_blank";
-    const a2 = el("a", null, "syllabuses PDF"); a2.href = encodeURI(mba.files.syllabus); a2.target = "_blank";
-    meta.appendChild(a1); meta.appendChild(document.createTextNode(" · ")); meta.appendChild(a2); meta.appendChild(document.createTextNode(")"));
-  }
-  renderCatalogSnapshotBar();
+  const mba = CATALOG.mba;
+  renderCatalogSources();
   const dl = $("#catalogDeadlines");
   if(dl && !dl.childElementCount && Array.isArray(mba.deadlines)){
     mba.deadlines.forEach(d=>{
@@ -496,24 +488,48 @@ function renderCatalogDetailsRow(entry){
   return tr;
 }
 
-/* The portal snapshot is imported per user, so the tab has to say where it
-   stands: how many rows, from when — or, when nothing is imported yet, a
-   short invitation that leads straight to the import. */
-function renderCatalogSnapshotBar(){
+/* Where the list comes from: one box, one row per source, both looking the
+   same. The MBA list ships with the app, the portal snapshot is imported per
+   user — the tab has to say how many rows and from when, and when nothing is
+   imported yet, offer that import as the one obvious next step.
+
+   The syllabus PDF is deliberately not linked here: every MBA course links
+   its own page of it ("Open syllabus (PDF, page 10)"), which beats sending
+   the reader into a 100-page file. */
+function renderCatalogSources(){
   const host = $("#catalogSnapshot"); if(!host) return;
   host.innerHTML = "";
+  const box = el("div","sources");
+  const mba = CATALOG && CATALOG.mba;
   const portal = CATALOG && CATALOG.portal;
 
+  if(mba){
+    const row = el("div","source-row");
+    const txt = el("div","txt");
+    txt.appendChild(el("b", null, mba.courses.length+" MBA exchange courses"));
+    txt.appendChild(document.createTextNode(" · list from "+mba.snapshot));
+    row.appendChild(txt);
+    if(mba.files && mba.files.schedule){
+      const acts = el("div","source-acts");
+      const a = el("a", null, "Schedule PDF");
+      a.href = encodeURI(mba.files.schedule); a.target = "_blank";
+      a.title = "The MBA schedule as published — the authority for these courses' times";
+      acts.appendChild(a);
+      row.appendChild(acts);
+    }
+    box.appendChild(row);
+  }
+
   if(portal){
-    const box = el("div","snapbar ok");
-    const txt = el("div","snapbar-text");
+    const row = el("div","source-row");
+    const txt = el("div","txt");
     txt.appendChild(el("b", null, portal.courses.length.toLocaleString("en-US")+" portal courses"));
     txt.appendChild(document.createTextNode(
       " · snapshot from "+(portal.snapshot||"?")+
       (portal.semester ? " · semester "+portal.semester : "")+
       (portal.local ? " · local dev file" : "")));
-    box.appendChild(txt);
-    const acts = el("div","snapbar-acts");
+    row.appendChild(txt);
+    const acts = el("div","source-acts");
     const upd = el("button","btn ghost small","Update…"); upd.type = "button";
     upd.addEventListener("click", ()=>openPortalImport("catalog"));
     acts.appendChild(upd);
@@ -523,23 +539,22 @@ function renderCatalogSnapshotBar(){
       rm.addEventListener("click", removeCatalogSnapshot);
       acts.appendChild(rm);
     }
-    box.appendChild(acts);
-    host.appendChild(box);
-    return;
+    row.appendChild(acts);
+    box.appendChild(row);
+  } else {
+    // Nothing imported: the main entry point into the whole feature, so it
+    // says why in one line and offers one obvious button.
+    const row = el("div","source-row empty");
+    const txt = el("div","txt");
+    txt.appendChild(document.createTextNode(
+      "Add all ~5,000 courses of this semester by importing them once from the Info portal — "+
+      "they stay in your browser, nothing is uploaded."));
+    row.appendChild(txt);
+    const b = el("button","btn import-btn","📚 Import the course catalog"); b.type = "button";
+    b.addEventListener("click", ()=>openPortalImport("catalog"));
+    row.appendChild(b);
+    box.appendChild(row);
   }
-
-  // Nothing imported: this is the main entry point into the whole feature,
-  // so it explains the why in one line and offers one obvious button.
-  const box = el("div","snapbar empty");
-  const txt = el("div","snapbar-text");
-  txt.appendChild(el("b", null, "Only the 15 MBA courses are listed."));
-  txt.appendChild(document.createTextNode(
-    " Add all ~5,000 courses of this semester by importing them once from the Info portal — "+
-    "they stay in your browser, nothing is uploaded."));
-  box.appendChild(txt);
-  const b = el("button","btn import-btn","📚 Import the course catalog"); b.type = "button";
-  b.addEventListener("click", ()=>openPortalImport("catalog"));
-  box.appendChild(b);
   host.appendChild(box);
 }
 
