@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tsinghua SEM Course Planner — Fall 2026</title>
-<link rel="stylesheet" href="styles.css?v=20260922k">
+<link rel="stylesheet" href="styles.css?v=20260928o">
 </head>
 <body>
 <header class="top">
@@ -74,10 +74,12 @@
   <!-- ============ CATALOG ============ -->
   <section class="panel" id="panel-catalog">
     <h2>Course catalog</h2>
-    <p class="lead">The MBA exchange-student list (with syllabus details) plus, if a snapshot is present, everything the
-      Tsinghua Info portal lists as open this semester. Click <strong>Add to plan</strong> and the course lands in your list as an <em>Option</em>; set its status there once you
-      have booked or bid for it. Times and rooms can still change — the official schedule wins.</p>
+    <p class="lead">The MBA exchange-student list (with syllabus details), plus every course the Tsinghua Info portal
+      lists as open this semester once you have imported it. Click <strong>Add to plan</strong> and the course lands in
+      your list as an <em>Option</em>; set its status there once you have booked or bid for it. Times and rooms can
+      still change — the official schedule wins.</p>
     <p class="hint" id="catalogMeta"></p>
+    <div id="catalogSnapshot"></div>
     <details class="cat-deadlines">
       <summary>Add/drop &amp; withdrawal deadlines (Beijing time)</summary>
       <ul id="catalogDeadlines"></ul>
@@ -131,6 +133,7 @@
         <div class="chiprow">
           <label class="chip"><input type="checkbox" id="catalogFits"><span>Fits my plan</span></label>
           <label class="chip"><input type="checkbox" id="catalogHideInPlan"><span>Hide courses already in my plan</span></label>
+          <label class="chip"><input type="checkbox" id="catalogEnglish"><span>Taught in English</span></label>
           <label class="chip"><input type="checkbox" id="catalogFixedTime" checked><span>Only courses with a fixed time</span></label>
         </div>
       </div>
@@ -196,19 +199,28 @@
   <section class="panel" id="panel-add">
     <div class="add-head">
       <div>
-        <h2 id="formTitle">Add a course manually</h2>
-        <p class="lead" id="formLead">Enter a course by hand. Only a title, its credits, and one meeting time are
-          required (marked <em class="req">*</em>); everything else is optional. Already have one? Click any course
-          under My courses to edit it here — or use the buttons on the right to import.</p>
+        <h2 id="formTitle">Add a course</h2>
+        <p class="lead" id="formLead">The quickest way is to let the portal fill this in for you. Already have a
+          course? Click any row under My courses to edit it here.</p>
       </div>
       <div class="add-import-btns">
         <span class="import-hint">⚡ Quickest way — no typing needed:</span>
-        <button class="btn paste-open import-btn" id="openXlsBtn" type="button">
-          <span aria-hidden="true">📥</span> Import schedule from THU Info portal (.xls)
+        <button class="btn import-btn" id="openScheduleImportBtn" type="button">
+          <span aria-hidden="true">📅</span> Import my timetable from the Info portal
         </button>
-        <button class="btn paste-open import-btn" id="openPasteBtn" type="button">
-          <span aria-hidden="true">📋</span> Paste from the course system
+        <button class="btn ghost small" id="openCatalogFromAddBtn" type="button">
+          <span aria-hidden="true">📚</span> Or browse the course catalog
         </button>
+        <details class="legacy-imports">
+          <summary>Other ways to import</summary>
+          <p class="hint">Older routes, kept because they work without the portal reader.</p>
+          <button class="btn ghost small" id="openXlsBtn" type="button">
+            <span aria-hidden="true">📥</span> Schedule export (.xls)
+          </button>
+          <button class="btn ghost small" id="openPasteBtn" type="button">
+            <span aria-hidden="true">📋</span> Paste a course row
+          </button>
+        </details>
       </div>
     </div>
 
@@ -216,6 +228,7 @@
 
     <div class="form">
       <input type="hidden" id="fId">
+      <div id="courseDetailHost"></div>
 
       <!-- 1 · What is the course? -->
       <div class="fsection">
@@ -312,6 +325,19 @@
             open the downloaded .ics file with Google Calendar, or import it on desktop — it then syncs to your phone.
             Printing always renders a real timetable; “All weeks · max load” also labels each course with the
             specific weeks it runs in, since overlapping cards there rarely all meet at once.
+          </p>
+        </div>
+
+        <div class="datagroup">
+          <div class="datagroup-title">Info portal</div>
+          <div class="datagroup-btns">
+            <button class="btn import-btn" id="portalScheduleBtn" type="button"><span aria-hidden="true">📅</span> Import my timetable</button>
+            <button class="btn ghost" id="portalCatalogBtn" type="button"><span aria-hidden="true">📚</span> Import the course catalog</button>
+          </div>
+          <p class="hint" style="margin:8px 0 0">
+            Both read the Tsinghua Info portal in <em>your</em> browser, with your own login, and keep the result
+            here on your device — nothing is uploaded and nothing is shared. The catalog is a once-a-semester job;
+            the timetable is worth redoing whenever your registration changes.
           </p>
         </div>
 
@@ -487,6 +513,18 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="portalModalOverlay" hidden>
+  <div class="modal modal-portal" role="dialog" aria-modal="true" aria-labelledby="portalModalTitle">
+    <h3 id="portalModalTitle">Import from the Info portal</h3>
+    <div id="portalModalBody"></div>
+    <div id="portalPending"></div>
+    <input type="file" id="portalFile" accept="application/json,.json" style="display:none">
+    <div class="modal-actions" id="portalActions">
+      <button class="btn ghost" id="portalModalClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pasteModalOverlay" hidden>
   <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="pasteModalTitle">
     <h3 id="pasteModalTitle">Paste from the course system</h3>
@@ -591,20 +629,25 @@ School of Economics and Management
   </div>
 </div>
 
-<script src="js/core.js?v=20260922k"></script>
-<script src="js/history.js?v=20260922k"></script>
-<script src="js/calendar.js?v=20260922k"></script>
-<script src="js/parser.js?v=20260922k"></script>
-<script src="js/weekView.js?v=20260922k"></script>
-<script src="js/summary.js?v=20260922k"></script>
-<script src="js/courseList.js?v=20260922k"></script>
-<script src="js/archive.js?v=20260922k"></script>
-<script src="js/form.js?v=20260922k"></script>
-<script src="js/catalog.js?v=20260922k"></script>
-<script src="js/xlsImport.js?v=20260922k"></script>
-<script src="js/icsExport.js?v=20260922k"></script>
-<script src="js/printView.js?v=20260922k"></script>
-<script src="js/dataShare.js?v=20260922k"></script>
-<script src="js/main.js?v=20260922k"></script>
+<script src="js/core.js?v=20260928o"></script>
+<script src="js/store.js?v=20260928o"></script>
+<script src="js/history.js?v=20260928o"></script>
+<script src="js/calendar.js?v=20260928o"></script>
+<script src="js/parser.js?v=20260928o"></script>
+<script src="js/weekView.js?v=20260928o"></script>
+<script src="js/summary.js?v=20260928o"></script>
+<script src="js/courseList.js?v=20260928o"></script>
+<script src="js/archive.js?v=20260928o"></script>
+<script src="js/form.js?v=20260928o"></script>
+<script src="js/scheduleParse.js?v=20260928o"></script>
+<script src="js/catalog.js?v=20260928o"></script>
+<script src="js/scheduleImport.js?v=20260928o"></script>
+<script src="js/portalImport.js?v=20260928o"></script>
+<script src="js/importPreview.js?v=20260928o"></script>
+<script src="js/xlsImport.js?v=20260928o"></script>
+<script src="js/icsExport.js?v=20260928o"></script>
+<script src="js/printView.js?v=20260928o"></script>
+<script src="js/dataShare.js?v=20260928o"></script>
+<script src="js/main.js?v=20260928o"></script>
 </body>
 </html>

@@ -1,745 +1,951 @@
-# Planung — Tsinghua Course Planner, Ausbaustufe 2
+# Planung — Tsinghua Course Planner, Ausbaustufe 3
 
-Stand: 2026-09-22. Dieses Dokument ist die Arbeitsgrundlage für die nächsten
-Feature-Runden. Jede Phase wird einzeln freigegeben, gebaut, getestet,
-committet. **Status: Phase 1–4 umgesetzt, Phase 5 app-seitig fertig — wartet auf den
-Portal-Snapshot von Oskar (2026-09-22). Phase 6 offen.**
+Stand: 2026-09-28. Vorgänger: `_Archive/PLANNING-v1-2026-09-22.md` (Phasen 1–6
+der Ausbaustufe 2; untracked, aber in der Git-Historie unter `PLANNING.md`).
 
-**Regel für jede Phase — localStorage nicht kaputt machen:** Es gibt bereits
-Nutzer der Live-Seite. `STORE_KEY` bleibt `tsinghua-planner-v1`; neue Felder
-sind optional und bekommen in `load()` Defaults; nichts wird umbenannt oder
-umstrukturiert; `load()` schreibt nie zurück. Vor jedem Push: alten Stand
-(ohne die neuen Felder) in den Storage legen, neu laden, prüfen.
+Diese Datei ist die einzige Roadmap. Sie enthält **alle offenen Punkte**: die
+Reste aus Ausbaustufe 2 (Abschnitt 1) und die neuen Features (Abschnitte 3–8).
 
-**Datenformat:** Alle Datendateien sind JSON unter `data/` und werden per
-`fetch()` geladen (`holidays.json` jetzt, später die Kataloge). Ein Format,
-ein Loader; Tools schreiben direkt JSON. Lokal deshalb immer über
-`python3 -m http.server` (bzw. `.claude/launch.json` → „planner"), nicht
-`file://`.
-
-**Leitplanke (gilt für alles):** Das Tool ist ein *Planer*, kein Kalender.
-Pipeline = Katalog durchsuchen → Plan bauen → Konflikte/Credits prüfen →
-`.ics` exportieren → iOS/Google Calendar übernimmt den Alltag. Alles, was
-*während* des Semesters täglich läuft (Erinnerungen, Wegzeiten, private
-Termine), ist bewusst außerhalb des Scopes.
+> **Grundsatzentscheidung 2026-09-28 — Portaldaten werden nicht veröffentlicht.**
+> Der Kurskatalog des Info-Portals liegt hinter einem Login. Was hinter einem
+> Login liegt, hat die Universität bewusst nicht veröffentlicht; ob die
+> Nutzungsbedingungen eine Weiterveröffentlichung erlauben, ist ungeklärt, und
+> diese Entscheidung steht uns nicht zu. **`data/catalog-portal.json` und alle
+> Detaildaten bleiben deshalb dauerhaft gitignored.** Geteilt wird der
+> *Scraper*, nicht die *Daten*: jede:r zieht den Snapshot mit dem eigenen Login
+> selbst und legt ihn im eigenen Browser ab (IndexedDB, Abschnitt 3).
+> Committet wird nur, was wir selbst erstellt haben — die 15 kuratierten
+> MBA-Kurse, Feiertage, Department-Namen.
 
 ---
 
-## 0. Antworten auf die offenen Fragen
+## 0. Kurzantwort auf „Sind die alten Phasen beendet?"
 
-### Was ist PWA?
+**Nein — 4 von 6 sind fertig.**
 
-*Progressive Web App* = eine normale Website, die sich per „Zum Home-Bildschirm"
-wie eine App installieren lässt: eigenes Icon, startet ohne Safari-Adressleiste
-(Vollbild), optional offline nutzbar. Technisch: eine `manifest.json` (Name,
-Icon, Farben) plus optional ein *Service Worker* (cached die Dateien für
-offline). Für uns relevant ist nur die billige Hälfte: Icon + Vollbild +
-Theme-Farbe (ca. 30 Minuten, 3 Dateien). Der Service Worker bringt wenig — die
-App braucht ohnehin kein Netz außer beim ersten Laden — und Caching macht
-Updates schwerer nachvollziehbar. → Als kleiner Teilschritt in Phase 6 (Mobile)
-eingeplant, ohne Service Worker.
-
-### Was sollen „Alternative Sections bei Clash" (G) und „Free-Slot-Finder" (H) sein?
-
-Beides sind Folgefunktionen des Portal-Katalogs (Phase 5), keine eigenen Features:
-
-- **G — Alternative Sections:** Im Portal gibt es Kurse mit gleicher Kursnummer
-  und mehreren *Course sequences* (= Parallelgruppen, z. B. `00040172` seq 91
-  Mo Block 6 / seq 92 Di Block 6). Wenn die App einen Clash meldet, schaut sie
-  im Katalog nach, ob einer der beiden Kurse eine andere Sequence hat, die
-  *nicht* kollidiert, und zeigt sie direkt unter der Clash-Meldung an:
-  „Alternative: seq 92, Tue Block 6, weeks 1–16 — no clash · [Swap]".
-  *Swap* tauscht Zeit/Sequence im Plan. Für die MBA-Kurse (nur eine Gruppe pro
-  Kurs) bringt das nichts — es ist ein Portal-Feature.
-- **H — Free-Slot-Finder:** Umgekehrte Suche. Statt „welcher Kurs" fragt man
-  „was passt noch in meinen Plan?". Im Katalog ein Filter *„Fits my plan"*:
-  zeigt nur Kurse, die mit keinem `booked`/`bid`-Kurs überlappen (Tag + Zeit +
-  Wochen). Plus optional: Klick auf einen leeren Block in der Week View öffnet
-  den Katalog vorgefiltert auf genau diesen Tag/Block.
-
-H ist als Filter fast gratis, sobald der Katalog steht (→ Teil von Phase 5).
-G ist ein eigener Schritt mittlerer Größe (→ Phase 5, optional, zuletzt).
-
-### Wie mit Make-up-Days umgehen, ohne Sa/So abzubilden?
-
-Hintergrund: Um den National Day (1.–7. Okt) herum verschiebt die Uni
-üblicherweise Unterricht per Aushang („Sat Oct 10 follows Thursday
-timetable"). Das steht *nicht* im Academic Calendar, wird meist Ende September
-angekündigt und betrifft nur einzelne Tage.
-
-Entscheidung: **Verschiebungen werden pro einzelnem Termin markiert, nicht als
-Spalte und nicht als Uni-weite Regel.**
-
-- Am betroffenen Termin (z. B. *Elementary Chinese B*, Fr 2. Okt, Woche 3)
-  kann man „Move this meeting" wählen und ein neues Datum eintragen — auch ein
-  Samstag oder Sonntag.
-- Die Week View bleibt Mo–Fr. Der Termin bleibt an seinem ursprünglichen
-  Platz stehen, bekommt aber einen Vermerk „→ moved to Sat Oct 10". So sieht
-  man beim Planen weiterhin, wo der Kurs *normalerweise* liegt, und trotzdem,
-  dass diese eine Sitzung woanders stattfindet.
-- Der ICS-Export erzeugt genau diese eine Sitzung am neuen Datum (mit Hinweis
-  „Moved from Thu Oct 1 (National Day)" in der Beschreibung). Das Handy zeigt
-  also das Richtige, die Planungsansicht bleibt schmal.
-- Nur dieser eine Termin ist betroffen; alle anderen Wochen des Kurses bleiben
-  unverändert.
-
-Eine Uni-weite Make-up-Regel („Sa 10. Okt = Donnerstagsplan", automatisch für
-alle Kurse) kommt auf den Backlog — sie lässt sich später auf denselben
-Override-Mechanismus abbilden, falls die Uni so etwas ankündigt.
-
----
-
-## 1. Ist-Zustand (kurz, damit nichts doppelt gebaut wird)
-
-Schon vorhanden und im Plan wiederverwendet:
-
-| Vorhanden | Wo | Relevanz für Plan |
+| Phase (alt) | Status | Rest |
 |---|---|---|
-| Share-Link (`#plan=` base64) + Import beim Laden | `dataShare.js` | Basis für QR-Sync (nice-to-have) |
-| Credit-Goal-Balken im Header (`state.goal`) | `summary.js` | Bleibt so; kein weiterer Learning-Agreement-Ausbau |
-| XLS-Import des Stundenplan-Exports | `xlsImport.js` | Unabhängig vom Katalog |
-| Paste-Parser inkl. `4-6(week 1-16)`-Format | `parser.js` → `slotsFromCode()` | Wird vom Katalog wiederverwendet |
-| Toast mit Undo-Aktion (nur für Löschen) | `core.js` `toast()`, `courseList.js` | Muster für globales Undo |
-| ICS mit stabilen UIDs (`courseId-slotIdx-wN`), UTC-Konvertierung, Travel-Alarm | `icsExport.js` | Wird erweitert, nicht ersetzt |
-| Responsive Ansätze nur für Formular (2 Breakpoints) | `styles.css` Z. 312/313/363/518 | Mobile-Phase baut darauf auf |
+| 1 Undo/Redo | ✅ fertig | — |
+| 2 Feiertage + verschobene Termine | ✅ fertig | — |
+| 3 ICS-Export | ✅ fertig | iOS-Share-Sheet nie auf echtem iPhone getestet |
+| 4 Katalog a) MBA | ✅ fertig | — |
+| 5 Katalog b) Portal-Crawl | ◐ **App fertig, Daten kommen nie aus dem Repo** | Snapshot ist lokal da (5.020 Zeilen), darf aber nicht committet werden (siehe Kasten oben) → die Live-Seite braucht einen **Import-Weg pro Nutzer:in** statt einer `fetch()`-Datei. Außerdem: „Alternative Sections" (G) nie gebaut |
+| 6 Mobile | ❌ nicht begonnen | komplett |
 
-Bekannte Lücken im Datenmodell, die *mit* dem Portal-Katalog (Phase 5) gefixt
-werden müssen:
-
-1. `weeks` gilt pro Kurs. Portal-Zeilen wie `1-6(week 1-8),2-6(week 9-16)`
-   (zwei Meetings mit unterschiedlichen Wochen) sind nicht darstellbar.
-   `slotsFromCode()` nimmt aktuell nur den *ersten* Wochenbereich.
-2. Kurs-IDs aus Paste/Formular sind Zufalls-IDs. Für Katalog-Kurse braucht es
-   deterministische IDs (`number-seq`), damit Export-UIDs auch nach
-   Neu-Import stabil bleiben.
+Die Reste sind unten als **Phase 0** und **Phase 8** eingeplant, nicht
+weggeworfen.
 
 ---
 
-## 2. Reihenfolge (Roadmap)
+## 1. Ist-Zustand (was existiert, damit nichts doppelt gebaut wird)
 
-| Phase | Feature | Warum an dieser Stelle | Aufwand |
+**App (live, GitHub Pages):** Wochenansicht mit Clash-Erkennung, Feiertagen und
+verschobenen Terminen; Kursliste + Archiv; Add/Edit-Formular mit Meetings-Editor,
+Paste-Modal und `.xls`-Import; Katalog-Tab (MBA-Liste, Suche, Filter, „Fits my
+plan", Ein-Klick-Add); ICS-Export; Druckansicht; JSON-Export/Import; Share-Link;
+Undo/Redo. Kein Build-Schritt, kein Framework, kein Backend.
+
+**Daten (lokal vorhanden):**
+
+| Datei | Zeilen | Getrackt? | Inhalt |
 |---|---|---|---|
-| 1 ✅ | **Undo/Redo** | Klein, berührt alle Mutationsstellen — danach hängt jeder weitere Bulk-Eingriff (Katalog-Add, Import) automatisch am Undo | S |
-| 2 ✅ | **Feiertage + verschobene Termine** | Eigenständige Feiertags-„Datenbank" + Termin-Overrides; Kurse bleiben unberührt. ICS (Phase 3) fragt nur zwei Helfer ab | S–M |
-| 3 ✅ | **ICS-Export verbessern** | Baut direkt auf Phase 2 auf | M |
-| 4 ✅ | **Katalog a) MBA-Kurse** | Kuratierte Daten aus den beiden PDFs + neuer Tab; die UI entsteht hier | M |
-| 5 ◐ | **Katalog b) Portal-Crawl** | Scraper-Snippet, Merge, dann H (Fits-my-plan) und optional G (Alternative Sections) | M–L |
-| 6 | **Mobile** | Zuletzt, damit der neue Katalog-Tab gleich mitbehandelt wird und keine Doppelarbeit entsteht | M–L |
+| `data/catalog-mba.json` | 15 Kurse | ✅ | kuratiert aus zwei PDFs: Raum, Beschreibung, Prüfung, Syllabus-Seite |
+| `data/catalog-portal.json` | **5.020** | ❌ **bleibt gitignored** | Portal-Snapshot 2026-09-22: Titel EN/CN, Nummer, Sequence, Credits, Department, Dozent, Zeit-Code, **features**, Remarks. Nur Oskars lokale Entwicklungskopie |
+| `data/departments.json` | 83 | ✅ | Department-Namen |
+| `data/holidays.json` | 10 | ✅ | Feiertage im Semester |
 
-Aufwand: S = eine kurze Session, M = eine lange Session, L = mehrere Sessions.
-Reihenfolge ist tauschbar — einzige harte Abhängigkeiten: 2 → 3, 4 → 5, und
-Phase 6 sollte nach 4 kommen.
+**Neu ausgewertet (2026-09-28) — der `features`-Wert ist das fehlende
+Sprach-Feld:**
 
----
+| `features` | Anzahl |
+|---|---|
+| (leer) | 3.900 |
+| **Taught in foreign language** | **438** |
+| Practice course | 282 |
+| mainly taught in Chinese (bilingual course) | 172 |
+| Experiment course | 123 |
+| **≥50% taught in foreign language (bilingual course)** | **82** |
+| Thematic seminar | 21 |
+| Freshman seminar | 2 |
 
-## 3. Must-have-Features im Detail
+→ **520 Kurse sind auf Englisch belegbar, 692 zumindest teilweise.** Das ist
+genau die Teilmenge, die für Austauschstudierende zählt → **Sprachfilter im
+Katalog-Tab** (Phase 0, fällt dort fast gratis an). Mit dem Detail-Abruf hat
+diese Zahl nichts mehr zu tun (siehe Kasten unten). Weitere Zahlen:
+3.648 verschiedene Kursnummern, davon **427 mit mehreren Sequences** (→
+„Alternative Sections" lohnt sich), 1.996 Kurse mit mehreren Zeit-Codes,
+Dateigröße 1,7 MB roh / 247 KB gzip (→ zu groß für `localStorage`, unkritisch
+für IndexedDB).
 
-### Phase 1 — Undo/Redo ✅ (umgesetzt 2026-09-22)
+**Quellen im Info-Portal (`zhjwe.cic.tsinghua.edu.cn`), alle login-gated und
+CORS-gesperrt:**
 
-Umgesetzt wie geplant: `js/history.js` mit `commit()/undo()/redo()`, Buttons
-↶ ↷ neben dem „?" im Header, ⌘Z/⌘⇧Z (Ctrl+Z/Ctrl+Y), alle acht
-Mutationsstellen umgestellt, `confirm()` beim Löschen entfernt.
-
-**Ziel.** Jede Änderung am Plan (nicht: Ansichtseinstellungen) ist per Klick
-oder ⌘Z rückgängig zu machen; Redo per ⌘⇧Z.
-
-**Design-Entscheidungen.**
-- *Snapshot-Stack, kein Command-Pattern.* Der Plan ist klein (< 100 Kurse); ein
-  Stack aus vollständigen Kopien von `state.courses` (max. 50 Einträge) ist
-  einfacher und fehlerärmer als invertierbare Operationen. Entspricht auch der
-  Immutability-Regel: `state.courses` wird immer als Ganzes ersetzt, nie
-  in-place mutiert.
-- *Nur im Speicher, nicht in `localStorage`.* Reload leert die History. Klar
-  im Tooltip kommuniziert. Vorteil: Storage-Format bleibt unverändert, Nutzer
-  mit altem Stand sind nicht betroffen.
-- *Was ist undo-fähig:* Kurs speichern/ändern, löschen, Statuswechsel in der
-  Liste, Archiv-Restore/-Delete, Bulk-Add (Paste, XLS, später Katalog),
-  JSON-Import, Reset, Laden aus Share-Link. *Nicht:* Wochenwahl,
-  Sichtbarkeits-Toggles, Credit-Goal, Sortierung.
-- *UI:* ein „↶ Undo"-Button (mit Redo daneben) in der Leiste über der Week View
-  und der Course List, disabled wenn leer; Tooltip zeigt das Label der letzten
-  Aktion („Undo: Deleted 'Firm Valuation'"). Jede Mutation zeigt weiterhin den
-  Toast mit Undo-Aktion (bestehendes Muster). Tastatur: ⌘Z / Ctrl+Z, ⌘⇧Z /
-  Ctrl+Y — nur wenn der Fokus nicht in einem Eingabefeld liegt.
-
-**Umsetzung.**
-1. Neue Datei `js/history.js`: `commit(nextCourses, label)`, `undo()`,
-   `redo()`, `canUndo()/canRedo()`, `renderUndoButtons()`. `commit` legt den
-   *alten* Zustand auf den Stack, setzt `state.courses = nextCourses`, ruft
-   `save()` + `renderAll()`, leert den Redo-Stack.
-2. Alle Mutationsstellen auf `commit()` umstellen (aktuell 8 Stellen:
-   `main.js` Save-Handler, `courseList.js` Delete + Statuswechsel,
-   `archive.js` Restore/Delete, `form.js` Bulk-Add, `dataShare.js` Import /
-   Hash-Import / Reset). Alle Stellen erzeugen dabei neue Arrays statt
-   `push`/`splice`.
-3. Das bestehende Spezial-Undo in `deleteCourseWithConfirm` durch das
-   generische ersetzen. `confirm()`-Dialog beim Löschen kann dann entfallen —
-   Undo ist die bessere Absicherung.
-4. Buttons in `index.html` (Week-View-Leiste + Course-List-Leiste),
-   Keyboard-Handler in `main.js`, Load-Order: `history.js` nach `core.js`.
-
-**Akzeptanz.** Kurs löschen → Undo → Kurs ist zurück, an alter Position, mit
-gleicher ID. Paste mit 5 Kursen → ein Undo entfernt alle 5. Redo nach Undo
-stellt wieder her. Neue Mutation nach Undo leert Redo. ⌘Z in einem Textfeld
-löst *kein* Plan-Undo aus.
-
----
-
-### Phase 2 — Feiertage + verschobene Termine ✅ (umgesetzt 2026-09-22)
-
-Umgesetzt wie unten beschrieben, mit zwei Abweichungen: Feiertage liegen in
-`data/holidays.json` (JSON, nicht JS — s. Datenformat-Regel oben), und die
-betroffenen Seed-Kurse sind die Chinesisch-Kurse (Fr), nicht Leadership.
-Der ICS-Export liest die Overrides noch **nicht** — das ist Phase 3.
-
-**Designprinzip: eigenständig, ohne die Kurse anzufassen.** Das Feature
-besteht aus zwei Datenquellen, die *neben* den Kursen liegen und nur über
-Datum bzw. (Kurs, Meeting, Woche) mit ihnen verknüpft werden:
-
-1. **Feiertags-„Datenbank"** — statische Datei, die ich beim ersten Mal von
-   Hand aus dem Academic Calendar pflege. Kein Kurs weiß etwas davon.
-2. **Termin-Overrides** — kleine Tabelle im `state`, in der einzelne Sitzungen
-   als „verschoben" markiert sind. Auch hier: die Kursobjekte (`weeks`,
-   `slots`) bleiben exakt, wie sie sind.
-
-Damit ist das Feature ein reiner *Overlay* über der bestehenden Logik: Grid,
-Clash-Erkennung, Liste, Credits funktionieren ohne Änderung weiter; nur
-Darstellung und ICS-Export lesen die zwei Quellen zusätzlich.
-
-**Datenlage (aus `assets/Tsinghua academic calendar.png`).** Woche 1 = Mo
-14. Sep 2026, Woche 18 endet 17. Jan 2027. Vorlesungsfreie Tage im Semester:
-
-| Datum | Wochentag | Semesterwoche | Anlass |
+| # | Seite | URL | Liefert |
 |---|---|---|---|
-| 25. Sep 2026 | Fr | 2 | Mid-Autumn Festival |
-| 1.–2. Okt 2026 | Do, Fr | 3 | National Day |
-| 5.–7. Okt 2026 | Mo–Mi | 4 | National Day |
-| 1. Jan 2027 | Fr | 16 | New Year |
+| **A** | Query courses open this semester | `xkJxs.vxkJxsXkbBs.do?m=jxsKkxxSearch` | Katalog, 5.033 Zeilen / 252 Seiten. **Kein Raum, keine Beschreibung.** Scraper existiert: `tools/portal-scrape.js` |
+| **B** | My timetable (Stundenplan) | `xkJxs.vxkJxsXkbBs.do` | **Meine belegten Kurse + Raum + Wochen**, Gitter 6 Sections × 7 Tage. Noch kein Scraper |
+| **C** | Course detail | `xkJxs.vxkJxsJxjhBs.do?m=showKcDetail&p_kch=<nr>&p_kxh=<seq>&p_xnxq=2026-2027-1` | **Credit hours, Testing methods, Textbooks, Reference books, Beschreibung EN + CN.** Erreichbar **nur als Link aus B** (siehe Kasten) |
 
-**Beobachtung aus dem MBA-Schedule-PDF.** Die MBA-Kurse lassen Woche 4
-aus (`Week 1-3,5`) — der National Day ist dort schon eingepreist. Die
-Chinesisch-Kurse (Language Centre, Fr 13:30, Woche 1–12) dagegen treffen
-Fr 25. Sep und Fr 2. Okt. Regel daraus: **Die App verändert nie selbst
-Kursdaten oder löscht Termine. Sie markiert, warnt, und lässt den Export den
-Tag überspringen.** Ob nachgeholt wird, weiß nur der Dozent — deshalb der
-manuelle „Move this meeting"-Mechanismus.
+Belege im Repo: `_Archive/Schedule-Info-Portal/` (HTML-Dump von B +
+Screenshots von B und C), `_Archive/Feature_Crawler/` (Dump von A).
 
-**Datenformat.**
+> **Verifiziert 2026-09-28 — C hängt an B, nicht an A.** Im Katalog-Dump (A)
+> kommt `showKcDetail` **kein einziges Mal** vor; die dortigen Links zeigen auf
+> `showJsDetail` (Dozentenprofil) und `showToXs` (ungeprüft, siehe Backlog).
+> Die Detailseite ist also nur für die Kurse erreichbar, die im eigenen
+> Stundenplan stehen — im Regelfall **5–8 Stück**. Eine frühere Planversion
+> ging von konstruierbaren URLs für beliebige Kursnummern aus (692 Seiten);
+> das war eine unbelegte Annahme und ist gestrichen. Konsequenz: Der
+> Detail-Abruf ist ein **kleiner Nachlauf des Stundenplan-Scrapers**, kein
+> eigenes Großvorhaben.
+
+---
+
+## 2. Reihenfolge
+
+| Phase | Feature | Warum hier | Größe |
+|---|---|---|---|
+| **0** ✅ | Katalog-Import pro Nutzer:in (IndexedDB) | Ersetzt den `fetch()` auf die nicht-committbare Datei. Alles Folgende baut auf einem geladenen Katalog auf | M |
+| **1** ✅ | Schedule-Scraper (Quelle B) | Liefert Raum + „was ist wirklich belegt" — die größte Informationslücke | M |
+| **2** ✅ | Schedule-Import in der App | Ohne Import nützt der Scraper nichts. Enthält den Abgleich Plan ↔ Portal | M |
+| **3** ✅ | Kursdetails zu *meinen* Kursen (Quelle C) | Nachlauf des Stundenplan-Scrapers, ~6 Seiten. Füllt Beschreibung/Prüfungsform im eigenen Plan | **S** |
+| **4** | „Add / edit course" umbauen | Erst sinnvoll, wenn Katalog + Schedule-Import stehen (Punkt 2 des Auftrags) | M |
+| **5** | Scraper von der Planner-Seite starten (Bookmarklet + Übergabe) | Bequemlichkeit; setzt fertige Scraper voraus (Punkt 3 des Auftrags) | M |
+| **6** | Testsuite | Läuft parallel ab Phase 1 mit (TDD), eigener Abschnitt wegen Setup | M |
+| **7** | Alternative Sections (Rest aus alt-Phase 5) | Braucht einen importierten Katalog (Phase 0) | S–M |
+| **8** | Mobile (alt-Phase 6) | Unverändert offen, zuletzt weil rein kosmetisch | M |
+
+**Regel wie bisher:** Ein Feature ist dann gut, wenn es *Planungsarbeit
+abnimmt*. Die App bleibt Planer, kein Kalender — Übergabe an iOS per `.ics`.
+
+---
+
+## 3. Phase 0 — Katalog-Import pro Nutzer:in (IndexedDB) ✅ (umgesetzt 2026-09-28)
+
+**Umgesetzt:** `js/store.js` (IndexedDB `thu-planner-data`, Store `snapshots`,
+`snapshotGet/Put/Clear/Available`, `validateCatalogSnapshot` — validiert *vor*
+dem Schreiben), `ensureCatalog()` als Drei-Quellen-Kaskade (MBA-Datei →
+importierter Snapshot → lokale Dev-Datei), Snapshot-Statuszeile im Katalog-Tab
+mit „Update…"/„Remove", Leerzustand mit Ein-Klick-Einstieg, Sprachfilter
+„Taught in English" aus `features` (528 Treffer, verifiziert), `data/README.md`
+und ein erklärender `.gitignore`-Kommentar. 10 Tests in `tests/store.test.mjs`
++ 6 in `tests/storage.test.mjs`.
+
+
+
+**Problem.** `catalog.js` holt den Portal-Katalog heute per
+`fetch("data/catalog-portal.json")`. Diese Datei darf nicht ins öffentliche
+Repo (Kasten oben) — auf der Live-Seite liefert der Request also 404, und der
+Katalog-Tab zeigt seit dem 22.09. nur die 15 MBA-Kurse. Der Weg über eine
+ausgelieferte Datei ist damit endgültig tot; der Katalog muss **pro Browser
+importiert** werden.
+
+**Prinzip.** Geteilt wird das *Werkzeug*, nicht die *Daten*. Jede:r
+Austauschstudent:in hat einen Portal-Login, zieht sich mit demselben
+Bookmarklet (Phase 5) den eigenen Snapshot und legt ihn im eigenen Browser ab.
+Die Daten verlassen den Browser nie — sie gehen weder an GitHub noch an einen
+Server. Das ist datenschutzrechtlich sauberer als der Commit *und* technisch
+ehrlicher: der Snapshot ist ohnehin pro Semester verschieden.
+
+### 3.1 Ablage: IndexedDB, getrennt vom Plan
+
+| | Plan | Snapshots |
+|---|---|---|
+| Wo | `localStorage["tsinghua-planner-v1"]` | **IndexedDB `thu-planner-data`** |
+| Was | Kurse, Status, Overrides, Goal, `detail` | nur Katalogzeilen |
+| Größe | wenige KB (+ ~15 KB Details) | 1,7 MB |
+| Wert | **unersetzlich** (Handarbeit) | jederzeit neu scrapbar |
+
+**Warum nicht `localStorage`:** ~5 MB Gesamtbudget pro Origin, synchron. Ein
+1,7-MB-String würde ein Drittel davon fressen, jeden Zugriff blockieren — und
+im schlimmsten Fall mit einer Quota-Exception den **Plan** mitreißen. Die
+Trennung ist bewusst: ein voller Katalog-Store darf niemals einen Plan
+beschädigen.
+
+**Schema** (`js/store.js`, neu, ~80 Zeilen):
+
+```
+DB "thu-planner-data", version 1
+  objectStore "snapshots"   keyPath: "id"
+    { id:"catalog", source, semester, snapshot:"2026-09-22",
+      importedAt:"2026-09-28T…", count:5020, rows:[…] }
+```
+
+Ein Record pro Quelle, das Array/Objekt direkt gespeichert (structured clone) —
+**kein `JSON.parse` beim Lesen**, also kein Parse-Overhead beim Öffnen des
+Tabs. API:
 
 ```js
-// data/holidays.json — per fetch() geladen; ein Eintrag pro Tag, damit
-// Lookups trivial sind.
-{ "semester":"2026-2027 Autumn", "source":"…", "updated":"2026-09-22",
-  "holidays":[ { "date":"2026-09-25", "name":"Mid-Autumn Festival" },
-               { "date":"2026-10-01", "name":"National Day" }, /* … */
-               { "date":"2027-01-01", "name":"New Year" } ] }
-
-// state.overrides — pro verschobener Sitzung ein Eintrag; Schlüssel ist
-// courseId|slotIdx|week, damit die Kursobjekte selbst unverändert bleiben.
-state.overrides = {
-  "seed-chinese|0|3": { movedTo:"2026-10-10", start:"13:30", end:"16:05", note:"" }
-};
+snapshotGet(id)          // -> record | null
+snapshotPut(id, record)  // ersetzt vollständig
+snapshotMeta()           // -> {catalog:{snapshot,count}} für die UI
+snapshotClear(id)
 ```
 
-`movedTo` darf jeder Kalendertag sein (auch Sa/So). `start/end` sind
-optional (Default = die Slot-Zeit), falls die Nachholsitzung eine andere
-Uhrzeit hat. Ein Eintrag ohne `movedTo` (nur `note`) ist zulässig — z. B.
-„fällt aus, keine Nachholung" — und wird im Export ebenfalls übersprungen.
+Alles Promise-basiert, alles in try/catch: **IndexedDB kann fehlen**
+(Privatmodus, Safari mit blockierten Website-Daten). Dann läuft die App
+unverändert weiter und der Katalog-Tab zeigt „Kein Katalog importiert" —
+niemals ein Fehlerdialog.
 
-**Helfer** in `js/calendar.js` (neu, Load-Order nach `history.js`):
-`holidayOn(week, day)` → Feiertagsname oder `null`; `overrideFor(courseId,
-slotIdx, week)`; `setOverride()/clearOverride()` (über `commit()` aus
-Phase 1, damit Undo greift); `affectedMeetings()` → Liste aller Sitzungen
-über das Semester, die auf einen Feiertag fallen oder verschoben sind (für
-die Info-Box). Kein allgemeiner Termin-Generator — die bestehende Schleife
-`parseWeeks × slots` bleibt, wo sie ist.
+### 3.2 `catalog.js`: `ensureCatalog()` umbauen
 
-**Week View.**
-- Feiertag: Spaltenkopf bekommt Zusatz „Oct 1 · National Day", die Spalte
-  wird leicht getönt/schraffiert. Kurse an diesem Tag werden weiter
-  gezeichnet, aber gedimmt, mit Badge „Holiday — no class". Nicht
-  ausblenden — sonst sucht man den Kurs.
-- Verschobene Sitzung: bleibt an ihrem normalen Platz, gestrichelter Rahmen,
-  Badge „→ Sat Oct 10". Tooltip nennt Datum, Uhrzeit, Notiz.
-- Bedienung: In der Einzelwochen-Ansicht hat jede Sitzung einen kleinen
-  „Move…"-Link im Event-Kasten (nur bei Hover/Fokus sichtbar, damit das Grid
-  ruhig bleibt). Klick öffnet ein Mini-Modal: Datum (`<input type="date">`),
-  optional Uhrzeit, Notiz, Buttons „Save" / „Clear move". Zusätzlich hat jede
-  Zeile in der Info-Box (s. u.) denselben Link — das ist der Weg, den man bei
-  Feiertagen tatsächlich nimmt.
-- Wochenauswahl: Optionstext mit Hinweis, z. B. „Week 4 · Oct 5 – 11 ·
-  holiday Mon–Wed". Betrifft 4 von 18 Wochen.
-- „All weeks"-Ansicht: keine Feiertagsdarstellung (ist datumslos); verschobene
-  Sitzungen erscheinen dort nicht extra.
-- Clash-Erkennung: unverändert. Sie arbeitet auf wöchentlichen Slots; ein
-  Clash am 1. Okt ist eine Warnung für den Normalfall und darf stehen bleiben.
+Reihenfolge der Quellen, erste Treffer gewinnt:
 
-**Info-Box „Holidays & moved meetings"** unter der Clash-Box: alle Sitzungen
-aus `affectedMeetings()`, z. B. „Elementary Chinese B — Fri Oct 2 (week 3)
-is National Day. [Move this meeting…]" bzw. „… moved to Sat Oct 10 19:00
-[Edit] [Clear]". Leer → Box versteckt. Das ist die eigentliche Planungshilfe:
-eine Liste dessen, was man beim Dozenten klären muss.
+1. `fetch("data/catalog-mba.json")` — committet, immer da (15 Kurse).
+2. `snapshotGet("catalog")` — der importierte Portal-Snapshot.
+3. *Dev-Fallback:* `fetch("data/catalog-portal.json")` — schlägt live mit 404
+   fehl (still ignoriert), greift aber auf Oskars lokalem Server. Damit bleibt
+   die lokale Entwicklung genau so bequem wie heute, ohne Sonderpfad.
 
-**Print View:** Spaltenkopf-Hinweis + Dimmen wie in der Week View; Badge
-„moved → …" im Kärtchen. Kleiner Eingriff in `printView.js`.
+Der Tab bekommt oben eine Statuszeile: *„Portal-Katalog: 5.020 Kurse, Stand
+22.09.2026 · [Aktualisieren] [Entfernen]"* bzw. bei leerem Store ein
+Hinweis-Panel mit dem Weg zum Bookmarklet (Phase 5).
 
-**Storage/Kompatibilität:** `state.overrides` ist ein neues, optionales Feld
-(Default `{}`); `load()` ergänzt es, wenn es fehlt. Share-Link und JSON-Export
-nehmen es mit, damit Verschiebungen mitgeteilt werden können. Alte Links ohne
-das Feld laden weiter.
+### 3.3 Import-Wege (UI in *Data & sharing*, verlinkt aus dem Katalog-Tab)
 
-**Umsetzung.**
-1. `data/holidays.json` anlegen (Daten), `js/calendar.js` (Helfer +
-   `loadHolidays()`), in `index.html` einbinden.
-2. `weekView.js`: Spaltenkopf/Tönung, Event-Badges, „Move…"-Link, Info-Box.
-3. Mini-Modal für Verschieben in `index.html` + Handler in `main.js`.
-4. `printView.js`: Markierung übernehmen.
-5. `styles.css`: `.dayhead.holiday`, `.daycol.holiday`, `.ev.on-holiday`,
-   `.ev.moved`, Badge-Styles.
-6. `core.js`: `state.overrides` mit Default; `dataShare.js`: im Share-Link
-   und JSON mitführen.
-7. Seed-Kurs *Leadership* auf `weeks: "1-3,5-16"` korrigieren (laut
-   MBA-PDF; die Notiz zum Widerspruch entfällt). Erledigt den offenen Punkt
-   aus `CLAUDE.md`.
+1. **Datei wählen** — die vom Scraper heruntergeladene `catalog-portal.json`.
+2. **Direktübergabe** aus dem Bookmarklet per `postMessage` (Phase 5, 8.2).
+3. Validierung vor dem Schreiben: `courses` ist ein Array, Pflichtfelder
+   `number`/`seq`/`titleEn` vorhanden, `semester` plausibel → sonst
+   verständliche Fehlermeldung, Store bleibt unangetastet.
+4. Import ersetzt den Snapshot vollständig (kein Merge — ein Snapshot ist ein
+   Stand, keine Sammlung).
 
-**Akzeptanz (geprüft 2026-09-22).** Woche 4 zeigt Mo–Mi getönt mit
-„National Day"; Woche 2 Fr „Mid-Autumn"; Woche 16 Fr „New Year". Elementary
-Chinese B steht in der Info-Box mit Fr 25. Sep und Fr 2. Okt. „Move this
-meeting" auf Sa 10. Okt → Event in Woche 3 bleibt am Freitag stehen, mit
-Badge „→ Sat Oct 10 13:30–16:05"; Undo entfernt die Verschiebung. Das
-Kursobjekt bleibt unverändert. Alter Storage-Stand ohne `overrides` lädt.
+**Weitergabe unter Kommiliton:innen** ist damit nicht verboten, nur nicht
+öffentlich: wer will, schickt die Datei per AirDrop/WeChat weiter. Das ist
+private Weitergabe an Personen mit eigenem Portal-Zugang, keine
+Veröffentlichung.
+
+### 3.4 Schritte
+
+1. `js/store.js` + Tests (IndexedDB im Test per `fake-indexeddb` oder
+   Adapter-Injektion — siehe 9.1).
+2. `ensureCatalog()` auf die Drei-Quellen-Kaskade umbauen.
+3. Import-UI + Statuszeile + Sprachfilter aus `features` (fällt hier gratis an).
+4. `.gitignore` **unverändert lassen** und einen Kommentar ergänzen, *warum*
+   (damit es niemand — ich eingeschlossen — später „aufräumt").
+5. `data/README.md`: welche Datei woher kommt, was committet wird und was nicht.
+6. Cache-Bust `?v=` bumpen.
+
+**Akzeptanz.**
+- Frischer Browser, kein Import: App lädt, Katalog-Tab zeigt 15 MBA-Kurse +
+  Hinweis, keine Konsolenfehler, kein 404-Dialog.
+- Import der 1,7-MB-Datei: < 2 s, danach > 5.000 Zeilen, Department-Dropdown
+  83 Einträge, Statuszeile mit Datum.
+- Reload: Katalog ist noch da (IndexedDB überlebt), `localStorage`-Plan
+  unverändert.
+- Privatmodus/IndexedDB blockiert: App funktioniert, Hinweis statt Absturz.
+- „Entfernen" leert den Store, der Plan bleibt vollständig erhalten.
+
+**Aufwand:** ~1 Tag. **Risiko:** niedrig, aber höher als der frühere
+Commit-Weg — IndexedDB-Fehlerpfade müssen sauber abgefangen werden.
 
 ---
 
-### Phase 3 — ICS-Export verbessern ✅ (umgesetzt 2026-09-22)
+## 4. Phase 1 — Schedule-Scraper (Quelle B) ✅ (umgesetzt 2026-09-28)
 
-Umgesetzt: Punkte 1–3 und 5–9 unten (Feiertage übersprungen, Overrides am
-neuen Datum mit gleicher UID, Share-Sheet auf Mobile mit Download-Fallback,
-`SEQUENCE`/`LAST-MODIFIED` über `state.icsSeq`, `X-WR-CALNAME`, Default nur
-`booked` + „Booked only"-Button, optionaler Reminder, Kursnummer in der
-Beschreibung, Dateiname mit Wochenbereich, `CATEGORIES`). Neu dazu: eine
-Live-Zeile „34 events · 1 skipped (holidays) · 1 moved" im Modal. Punkt 4
-(deterministische IDs) kam mit Phase 4. **Offen: Test auf dem echten iPhone**
-(Share-Sheet → Kalender) durch Oskar — die Emulation kann das nicht.
+**Portal-Zugang (korrigiert 2026-09-28):** Das Kurssystem `zhjwe.cic.tsinghua.edu.cn`
+hat **keinen eigenen Login** — es vertraut auf die Session von
+`info.tsinghua.edu.cn`. Ein zhjwe-Link kalt aufgerufen schlägt fehl. Der
+Dialog führt deshalb zuerst zum Login
+(`https://info.tsinghua.edu.cn/f/info/gxfw_fg/common/index`) und erst danach
+zur Seite. Direktlinks (beide von Oskar bestätigt):
+- Stundenplan: `…/xkJxs.vxkJxsXkbBs.do?url=/xkJxs.vxkJxsXkbBs.do&m=kbSearchforPortal`
+- Katalog: `…/xkJxs.vxkJxsXkbBs.do?url=/xkJxs.vxkJxsXkbBs.do&m=main&showtitle=0` —
+  die Einstiegsseite des Belegungssystems. Sie ist ein **Frameset** (Menü
+  links, Liste im `iframe name="right"`); von dort wählt man „Course
+  registration information query" → „Query courses open this semester". Dass
+  der Katalog-Scraper sein Formular auch in Frames sucht, passt genau dazu.
 
-**Ziel.** Die Übergabe an den Kalender ist der Punkt, an dem das Tool aufhört —
-sie muss auf dem iPhone in zwei Taps funktionieren, keine Feiertags-Termine
-erzeugen und bei erneutem Export keine Duplikate hinterlassen.
+**Umgesetzt:** `js/scheduleParse.js` (`parseSchedulePage(doc)` — ein Parser für
+App *und* Scraper), `tools/portal-schedule-scrape.js` (lädt den Parser per
+Script-Tag von der Planner-Seite, `postMessage`-Rückgabe, Download-Fallback),
+`js/portalImport.js` (geführter Drei-Schritt-Dialog mit Bookmarklet, Konsolen-
+Fallback, Drag-&-Drop und „Quelltext einfügen"; `postMessage`-Empfänger mit
+Origin-Prüfung). 14 Tests in `tests/schedule.test.mjs`, alle gegen den echten
+Portal-Dump. Im Browser Ende zu Ende geprüft: Dump einfügen → 6 Meetings mit
+Räumen, Zeiten und Wochen.
+**Offen (Phase 2):** Die gelesenen Meetings in den Plan übernehmen (Abgleich
+neu/abweichend/fehlt). Der Dialog zeigt sie bisher nur an.
 
-**Was heute schon gut ist:** UTC-Konvertierung (Beijing = UTC+8, kein DST),
-stabile UIDs, Wochenbereich + Kurs-Auswahl, optionale Beschreibungsfelder,
-Travel-Alarm.
 
-**Änderungen, nach Nutzen sortiert.**
 
-1. **Feiertage und Verschiebungen respektieren** (Phase 2). Pro Termin
-   fragt `buildICS()` zwei Helfer: `holidayOn()` → Termin überspringen
-   (Modal-Schalter „Skip holiday dates (Sep 25, Oct 1–7, Jan 1)", *an* per
-   Default, mit Live-Zähler „3 meetings skipped"); `overrideFor()` → Termin
-   am `movedTo`-Datum statt am Normaltermin erzeugen, Beschreibung „Moved
-   from Thu Oct 1 (National Day)". Gleiche UID wie der Normaltermin, damit
-   ein späterer Export ohne Verschiebung ihn wieder ersetzt.
-2. **Mobile-Übergabe.** Auf iOS Safari landet ein `<a download>` in „Dateien",
-   nicht im Kalender. Lösung: wenn `navigator.canShare({files})` verfügbar ist
-   (iOS 15+, Android Chrome), das Share-Sheet öffnen → dort erscheint direkt
-   „Kalender"/„Add All". Desktop behält den Download. Muss auf dem echten
-   iPhone getestet werden — Emulation reicht hier nicht.
-3. **Update statt Duplikat.** `SEQUENCE:<n>` pro Event, wobei `n` ein
-   Export-Zähler in `state` ist (`state.icsSeq`, wird pro Export erhöht), plus
-   `LAST-MODIFIED`. Kalender, die UIDs respektieren (Google, Outlook), ersetzen
-   dann den alten Termin. Apple Calendar dedupliziert beim Datei-Import *nicht*
-   zuverlässig — deshalb zusätzlich im Modal der Hinweis: „Import into a
-   dedicated calendar (e.g. 'Tsinghua'). To update, delete that calendar and
-   re-import." Das ist ehrlich und funktioniert überall.
-4. **Deterministische IDs für Katalog-Kurse** (`number-seq`, Phase 4/5), damit
-   UIDs auch nach Reset/Neu-Import identisch bleiben.
-5. **Kalender-Metadaten:** `X-WR-CALNAME:Tsinghua Fall 2026`,
-   `X-WR-TIMEZONE:Asia/Shanghai`. Erzeugt beim Import einen benannten Kalender
-   statt „Unbenannt".
-6. **Default-Auswahl:** nur `booked` vorausgewählt; `bid`/`option` sind
-   abwählbar sichtbar mit Hinweis. Exportiert man Optionen, landen im Kalender
-   Kurse, die man nie belegt — der häufigste Fehler.
-7. **Optionaler Reminder** („Alert 15 min before", Default aus) unabhängig
-   vom Travel-Block. Das ist noch Übergabe, kein Kalender-Ersatz: der Kalender
-   zeigt den Alarm, die App hat ihn nur mitgeschickt.
-8. **Beschreibung:** Kursnummer + Sequence mit aufnehmen (heute fehlt die
-   Nummer), damit man im Kalender-Termin den Kurs eindeutig wiederfindet.
-9. Kleinigkeiten: Dateiname mit Wochenbereich (`tsinghua-w1-18-2026-09-22.ics`),
-   `CATEGORIES:` = Status.
+### 4.1 Was die Seite liefert (aus dem Dump verifiziert)
 
-**Nicht gemacht (bewusst):** RRULE-basierte Serientermine (Wochenlücken +
-Feiertage machen Einzeltermine robuster); `METHOD:CANCEL` zum Entfernen
-gelöschter Kurse (wird von Importern nicht umgesetzt); Webcal-Abo (bräuchte
-einen Server je Nutzer).
+Die Seite ist ein einzelnes Widget `div#kbSearch_portal` mit
+`table.kebiao_table`: Kopfzeile Monday…Sunday, 6 Zeilen „Section 1…6",
+Zellen `td#a<block>_<day>` (block 1–6, day 1–7). Eine belegte Zelle enthält:
 
-**Umsetzung.** `icsExport.js` (Holiday-/Override-Abfrage, Share-Sheet,
-neue Properties), `index.html` (Modal: Holiday-Schalter, Reminder, Hinweistext,
-Defaults), `core.js` (`state.icsSeq`), `main.js` (Handler). Verifikation:
-`buildICS()` per Playwright aufrufen und die Ausgabe auf Feiertagsdaten prüfen;
-Import-Test in macOS Calendar + Google Calendar; iPhone-Test durch Oskar.
+```html
+<td id="a1_1">
+  <span onmouseover="return overlib('Classroom: 建华/经管新楼A201&lt;br&gt;Week: week 1-3,5', …)">
+    <a class="mainHref"
+       href="xkJxs.vxkJxsJxjhBs.do?m=showKcDetail&p_kch=70511131&p_kxh=1&p_jsxm=&p_kslxdm=&p_xnxq=2026-2027-1"
+       target="_blank">Digital Economy: Global versus Chinese Perspectives</a>
+  </span><br>
+</td>
+```
 
-**Akzeptanz.** Export Woche 1–18 der Seed-Kurse enthält keinen Termin am
-1. Okt; Zähler im Modal stimmt; erneuter Export hat `SEQUENCE` um 1 höher;
-auf dem iPhone öffnet sich das Share-Sheet mit Kalender-Option.
+Pro Meeting also: **Tag, Block, Raum, Wochen, Kursnummer (`p_kch`), Sequence
+(`p_kxh`), Titel EN, Semester, Detail-Link**. Mehrere Kurse pro Zelle sind
+möglich (mehrere `<span>`), Wochenenden haben `class="zhoumo"`.
 
----
+**Nicht auf der Seite:** Credits, Dozent, Department, Sprache, Prüfungstermin.
+Die kommen aus dem Katalog (A) bzw. den Details (C) über `number+seq`.
 
-### Phase 4 — Katalog a) MBA-Kurse (kuratiert) ✅ (umgesetzt 2026-09-22)
+**Wichtig:** Ein Kurs über zwei Blöcke steht in **zwei** Zellen (Digital
+Economy in `a1_1` *und* `a2_1`). Der Scraper muss die Zellen zu Meetings
+zusammenfassen, nicht jede Zelle als eigenen Termin ausgeben.
 
-Umgesetzt: `tools/build-mba-catalog.py` (pdfplumber liest die
-Syllabus-Kopfdaten; Stundenplan, Kurzbeschreibungen und Notizen sind im
-Skript von Hand transkribiert) → `data/catalog-mba.json` (15 Kurse, inkl.
-Add/Drop-Fristen) → Tab „Catalog" (`js/catalog.js`): Suche, Programm-/
-Wochentag-Filter, **„Fits my plan" (= H)**, „Hide courses in my plan",
-Karten mit Clash-Hinweis, aufklappbaren Details und Syllabus-Link auf die
-Seite. „Add to plan" → Status Option, `id = cat-<number>`, `catalogRef`.
-Abweichungen vom Plan: keine Mehrfachauswahl (Undo macht Einzel-Adds billig),
-keine Seed-Migration (Erkennung läuft über die Kursnummer). Beim Kuratieren
-gefunden: Syllabus sagt 2 CP für Digital Economy (Seed: 1), und die Dozenten
-der beiden oberen Chinesisch-Kurse sind zwischen Schedule und Syllabus
-vertauscht — beides steht als Notiz am Kurs.
+### 4.2 `tools/portal-schedule-scrape.js`
 
-**Quellen.**
-- `assets/26Fall_MBA Course Schedule_20260702_Exchange stdudents.pdf` — 1 Seite,
-  Wochenplan: Zeiten, Räume, Wochen, Dozent für 16 Kurse (inkl. 3 Chinesisch-
-  Kurse). Enthält außerdem die Add/Drop-Fristen (2. Runde 14.–20. Sep,
-  Withdrawal 19.–23. Okt und 16.–20. Nov).
-- `assets/2026 Fall Elective Course Syllabuses (English-Instructed) - Exchange
-  student.pdf` — 54 Seiten, 15 Kurse, strukturierte Kopfdaten: Kursnummer,
-  Titel CN/EN, Credits, Voraussetzungen, Sprache, Prüfungsform, Dozent +
-  E-Mail, Beschreibung, Seitenzahl im PDF.
+Aufbau analog `portal-scrape.js` (gleiche Konventionen: IIFE, globale
+Funktion, `download()`-Helper, gb2312-Decoding, Konsolen-Log als Anleitung).
+Unterschied: **eine Seite, kein Paging, kein Token** → deutlich einfacher und
+risikoärmer als der Katalog-Scraper.
 
-Text-Extraktion mit `pdfplumber` funktioniert sauber (beide getestet). Die
-Daten werden **einmalig von Hand/skriptgestützt kuratiert**, nicht zur
-Laufzeit geparst — die PDFs ändern sich nicht mehr.
+Zwei Betriebsarten in einer Datei:
+1. **DOM-Modus** (Standard): liest `document` der offenen Seite. Kein Fetch,
+   kein Encoding-Problem, funktioniert garantiert.
+2. **HTML-Modus**: `thuSchedule({ html: "<kompletter Quelltext>" })` — parst
+   einen übergebenen String per `DOMParser`. Das ist derselbe Codepfad, den
+   die App später beim „Quelltext einfügen"-Import benutzt (Phase 2/5), damit
+   Parser und Tests nur einmal existieren.
 
-**Bekannte Inkonsistenzen, die beim Kuratieren entschieden werden müssen:**
-- *Frontiers of Chinese Contemporary Issues Research* (Schedule) vs. *Frontier
-  Economic Issues in China* (Syllabus), Nummer 60510371 — gleicher Kurs;
-  Schedule-Titel als Anzeigename, Syllabus-Titel als Alias.
-- *Leadership* Wochen `1-3,5-16` (Schedule) — Seed in Phase 2 angepasst ✅.
-- Zeitangaben im Schedule (`8:00-11:25`, `13:30-16:55`, `19:00-22:00`) sind
-  Custom-Times, keine Standardblöcke → `slots` mit `start/end` ohne `block`.
-- Chinesisch-Kurse haben keine Syllabus-Kopfdaten (Nummer, Credits) — Seed
-  hat `64203022`/2 CP für Elementary B; die anderen beiden bleiben ohne Nummer,
-  Credits laut Kenntnis (Oskar prüft).
+Kern (eine reine Funktion, testbar, ohne DOM-Seiteneffekte):
 
-**Datenformat.** `data/catalog-mba.json`:
-
-```json
-{
-  "source": "MBA Course Schedule 2026-07-02 + Elective Syllabuses",
-  "snapshot": "2026-07-02",
-  "courses": [{
-    "key": "80516081",            // Kursnummer; Sequence unbekannt → ohne
-    "titleEn": "Business Marketing Management",
-    "titleCn": "实战的市场营销管理",
-    "number": "80516081", "credits": 1,
-    "instructor": "ZHANG Fan", "email": "…",
-    "dept": "School of Economics and Management", "lang": "English",
-    "program": "MBA",              // oder "MiM" / "MoF" (Course of …)
-    "room": "Rm. A209, Jianhua Bldg.",
-    "weeks": "6-9",
-    "slots": [{ "day": 1, "start": "13:30", "end": "16:55" }],
-    "prereq": "No", "assessment": "case analysis (report)",
-    "description": "…erste 2–3 Sätze…",
-    "syllabusPage": 2,
-    "notes": "Only a few seats for MiM/MoF courses open to MBA."
-  }]
+```js
+parseSchedulePage(doc) -> {
+  semester: "2026-2027-1",
+  scraped:  "2026-09-28",
+  meetings: [ { number, seq, titleEn, day, block, room, weeksRaw, weeks, detailUrl } ]
 }
 ```
 
-**UI — neuer Tab „Catalog"** (5. Tab, zwischen *Add / edit* und *Data*):
-- Suchfeld (Titel EN/CN, Nummer, Dozent), Filter-Chips: Programm (MBA / MiM /
-  MoF / Chinese), Wochentag, „Fits my plan" (Phase 5, hier schon als Chip mit
-  einfacher Overlap-Prüfung möglich).
-- Ergebnis als Karten (nicht Tabelle — funktioniert später auf Mobile ohne
-  Umbau): Titel, Dozent, Zeit/Wochen, Raum, CP, Programm-Badge; aufklappbar
-  für Beschreibung/Prüfung/Voraussetzungen; Link „Syllabus p. 2" öffnet das
-  PDF aus `assets/` an der Seite (`#page=2`).
-- Button **Add to plan** → Kurs mit Status `option`, `id` = `cat-80516081`
-  (deterministisch), `catalogRef: { source:"mba", key:"80516081" }`. Ist der
-  Kurs bereits im Plan: Badge „In plan · Booked" + Button „Show in list".
-  Mehrfach-Auswahl + „Add selected" für den ersten Durchlauf.
-- Bereits-im-Plan-Erkennung über `catalogRef.key` *oder* gleiche Kursnummer
-  (Seed-Kurse haben keine `catalogRef`).
-- Hinweisleiste oben: Snapshot-Datum + „Times/rooms may change — the official
-  schedule wins."
+- `weeksRaw` = `"week 1-3,5"` wie im Tooltip, `weeks` = `"1-3,5"` in der
+  App-Notation (durch `parseWeeks()` verdaubar).
+- `room` bleibt der Originalstring (`建华/经管新楼A201`). Übersetzung ist ein
+  Anzeigethema, siehe 4.4.
+- Der Tooltip wird aus `onmouseover` gelesen (`overlib('…')`), **nicht** aus
+  dem `title`-Attribut (gibt es nicht). Robust gegen Zeilenumbrüche:
+  Regex auf `Classroom:\s*(.*?)(?:<br>|$)` und `Week:\s*week\s*([0-9,\-\s]+)`.
+- Der Dump enthält die Seite **fünfmal hintereinander** (Safari-RTF-Artefakt).
+  Der Parser muss über *eine* `table.kebiao_table` laufen (`querySelector`,
+  nicht `querySelectorAll`) und der Test muss beides abdecken.
 
-**Umsetzung.**
-1. Kurationsskript `tools/build-mba-catalog.py` (pdfplumber, einmalig) →
-   erzeugt `data/catalog-mba.json`; danach manuelle Korrektur der o. g.
-   Inkonsistenzen. Skript wird committet, damit der Weg nachvollziehbar ist.
-2. `js/catalog.js`: Laden per `fetch("data/catalog-mba.json")` beim ersten
-   Öffnen des Tabs (lazy), Suche/Filter, Karten-Rendering, Add-Logik über
-   `commit()` (Phase 1).
-3. `index.html`: Tab + Panel; `styles.css`: Karten, Chips.
-4. `core.js`: `catalogRef` im Datenmodell dokumentieren; Seed-Kurse bekommen
-   `catalogRef` nachträglich beim Laden, wenn Nummer im Katalog gefunden wird
-   (leichter Migrationsschritt in `load()`).
-5. `file://`-Fallback: `fetch` auf lokale Dateien scheitert in Chrome bei
-   `file://`. Für lokales Entwickeln `python3 -m http.server` (steht schon in
-   CLAUDE.md); im Tab bei Fehler ein klarer Hinweis statt leerer Liste.
+### 4.3 Zellen → Meetings: Zusammenfassen benachbarter Blöcke
 
-**Akzeptanz.** Alle 16 Kurse aus dem Schedule sind im Tab; Suche nach „LU Yao"
-findet *Firm Valuation*; *Add to plan* legt den Kurs als Option an und die
-Week View zeigt ihn in Woche 1 Di 13:30; ein zweites *Add* ist blockiert;
-Undo entfernt ihn wieder.
+Gruppierung nach `number + seq + day + weeks + room`; Blöcke sortieren; direkt
+aufeinanderfolgende Blöcke (n, n+1) zu einem Meeting zusammenziehen:
+
+```
+{day:1, blocks:[1,2], start:"08:00", end:"12:15", room, weeks:"1-3,5"}
+```
+
+Der zusammengefasste Termin bekommt **kein** `block`-Feld (= „custom time" im
+Formular), weil er keinem einzelnen Block entspricht. Ein einzelner Block
+behält `block:n` und die Zeiten aus `BLOCKS`.
+
+**Bekannte Unschärfe:** Blocks 1+2 ergeben 08:00–12:15, die MBA-Kurse laufen
+laut PDF aber bis 11:25. Das Portal kennt nur Blöcke, die echte Endzeit steht
+nirgends maschinenlesbar. → Import-Vorschau zeigt die Zeit **editierbar** und
+warnt bei zusammengefassten Meetings („Portal kennt nur Blöcke — Endzeit ggf.
+anpassen"). Ist der Kurs im Katalog mit `room`/Zeiten aus dem MBA-PDF
+vorhanden, gewinnen die PDF-Zeiten (die sind handverifiziert).
+Schalter in der Vorschau: „Benachbarte Blöcke zusammenfassen" (Default an).
+
+### 4.4 Räume
+
+- Neues **optionales** Feld `slot.room`; Anzeige-Fallback `slot.room ||
+  course.room`. Kein Feld wird umbenannt, `course.room` bleibt wie es ist
+  (Storage-Regel).
+- Warum pro Slot: Kurse wechseln zwischen Terminen den Raum; der Schedule
+  liefert den Raum pro Zelle.
+- Anzeige: Raum in der Wochenansicht unter dem Titel (klein), in der
+  Kursliste als eigene Spalte, in der `.ics` als `LOCATION` (das ist der
+  eigentliche Gewinn — Apple Maps/Erinnerung „Zeit bis zum Ort" braucht das).
+- Optional, klein: `data/buildings.json` mit einer Handvoll Gebäude
+  (`建华/经管新楼` → „Jianhua / SEM New Building", `六教` → „6th Teaching
+  Building"). Anzeige `Jianhua A201 (建华/经管新楼A201)`. **Nice-to-have**,
+  nicht blockierend.
+
+### 4.5 Akzeptanz Phase 1
+
+- `parseSchedulePage` auf `tests/fixtures/schedule-page.html` (= der Dump)
+  liefert **6 Kurse / 9 Zellen → 6 Meetings**: Digital Economy (Mo, Block 1+2,
+  A201, W 1-3,5), Technology and Strategy (Di, Block 2, A307, W 1-12), Firm
+  Valuation (Di, Block 3+4, A101, W 1-3,5-8), Frontiers (Mi, Block 3+4, A419,
+  W 6-9), Leadership (Mi, Block 6, LG1-21, W 5-14), Machine Learning (Do,
+  Block 2, 六教6A216, W 1-16).
+- Chinesische Raumnamen kommen unverstümmelt an (kein Mojibake).
+- Der fünffach duplizierte Dump ergibt trotzdem 6 Meetings.
+- Ein echter Lauf im eingeloggten Portal produziert dieselbe Struktur.
+
+**Aufwand:** ~120 Zeilen Scraper + Tests. **Risiko:** niedrig — die Seite ist
+statisch und liegt als Dump vor; die einzige Unbekannte ist, ob das Live-DOM
+identisch ist (Screenshot sagt ja).
 
 ---
 
-### Phase 5 — Katalog b) Portal-Crawl ◐ (App-Seite umgesetzt 2026-09-22)
+## 5. Phase 2 — Schedule-Import in der App ✅ (umgesetzt 2026-09-28)
 
-Umgesetzt: `tools/portal-scrape.js` (Konsolen-Skript, Fetch-Strategie; liest
-das eingebettete `var gridData = […]`-Array statt HTML zu parsen — der Dump
-zeigte, dass die Seite die Tabelle so ausliefert; Resume über
-`sessionStorage`, Test-Modus `thuScrape({pages:3})`), `slot.weeks`
-(Parser, Grid, Clashes, ICS, Feiertage, Formular-Feld „Weeks (this
-meeting)"), Merge beider Quellen in `catalog.js` (Portal-Zeile mit gleicher
-Kursnummer ergänzt den MBA-Eintrag um Sequence/Remarks), Filter Source /
-Department / Block, `Restricted:`/`Priority:`-Übersetzung der Remarks-Präfixe,
-„Show more" ab 120 Karten. Getestet mit den 20 Zeilen aus dem HTML-Dump.
-**Offen:** Oskar führt das Skript aus → `data/catalog-portal.json` committen;
-danach prüfen, ob G (Alternative Sections) sich lohnt (wie viele Kursnummern
-haben mehrere Sequences?). Die DOM-Fallback-Strategie wurde nicht gebaut —
-erst, falls die Fetch-Variante am echten Portal scheitert.
+**Pop-up-Blockade gelöst (2026-09-28).** Safari blockte den Planer-Tab beim
+*ersten* Lauf und lud stattdessen eine Datei herunter; ab dem zweiten Lauf ging
+es. Ursache war nicht Safari, sondern die Reihenfolge: `window.open()` ist nur
+erlaubt, **solange eine Nutzergeste läuft**, und die ist weg, sobald irgendetwas
+awaited wird. Wir öffneten den Tab ganz am Ende — nach Script-Laden, Parsen und
+sechs Detail-Fetches. Jetzt öffnet **das Bookmarklet selbst** den Planer als
+allererste Anweisung, noch im Klick, und reicht das Fenster über
+`window.__thuPlanner` weiter. `null` heißt „trotzdem blockiert" (dann Hinweis +
+Download), ein fehlender Schlüssel heißt „aus der Konsole gestartet".
+`tests/bookmarklet.test.mjs` pinnt die Reihenfolge fest — sie ist unsichtbar und
+sonst leicht wieder kaputtzumachen.
 
-**Rahmen.** Portal `zhjwe.cic.tsinghua.edu.cn`, Funktion *Query courses open
-this semester* (`xkJxs.vxkJxsXkbBs.do?m=jxsKkxxSearch`): 5.032 Datensätze,
-252 Seiten à 20. Login-geschützt, CORS-gesperrt → **kein Live-Zugriff aus der
-App**. Der Katalog ist ein *Snapshot*, den Oskar selbst zieht.
+**Folge davon:** Der Planer-Tab liegt jetzt sofort vorn, das Panel auf der
+Portalseite also dahinter. Der Scraper spiegelt seinen Fortschritt deshalb per
+`postMessage` in den Dialog („Course details 3 of 6 …"), wo der Blick ohnehin
+ist. Der Planer meldet mit `thu-ready`, wann er empfangsbereit ist; nach 60 s
+ohne Nachricht zeigt er den Datei-Weg statt ewig „warte…".
 
-Aus dem HTML-Dump bekannt:
-- Formularfelder: `p_xnxq` (Semester), `p_kkdwnm` (Department), `p_kch`
-  (Nummer), `p_kcm` (Titel), `p_xm` (Dozent), `p_skxq` (Wochentag), `p_skjc`
-  (Block), `page`, `goPageNumber`, `token`, Sortierfelder `p_sort.*`.
-- Tabellenspalten: Titel EN, Titel CN, Nummer, Sequence, Credits, Department,
-  Dozent (Link `showJsDetail&p_jsh=…`), Class time (`4-6(week 1-16)`, mehrere
-  durch Komma), Course features. **Kein Raum, keine Sprache.**
-- Die Trefferliste rendert in einem `iframe name="right"`.
+**Abbrechen:** Im Fortschrittskasten sitzt oben rechts ein kleines „Cancel".
+Es schickt `thu-cancel` an den Portal-Tab (= unser `opener`); beide Scraper
+prüfen das **innerhalb** ihrer Schleifen, nicht erst am Ende, und bestätigen
+mit `thu-cancelled`. Ein geschlossener Planer-Tab zählt ebenfalls als Abbruch —
+es gäbe nichts mehr, wohin das Ergebnis könnte. Beim Katalog wird der
+Resume-Stand vorher in `sessionStorage` gesichert: vier Minuten Arbeit werden
+durch einen Abbruch nicht weggeworfen, `thuScrape({resume:true})` macht weiter.
 
-**Scraper — Vorgehen.**
-- `tools/portal-scrape.js`: ein Snippet zum Einfügen in die DevTools-Konsole
-  *im Iframe-Kontext* der eingeloggten Portal-Seite. Zwei Strategien,
-  eingebaut in einem Skript:
-  1. *Fetch-Variante:* Formular-POST mit `page=N` nachbauen (Cookies + Token
-     kommen automatisch mit, weil same-origin), HTML parsen (`DOMParser`),
-     Zeilen extrahieren. 252 Requests, 400 ms Pause → ~2 Minuten.
-  2. *DOM-Variante (Fallback):* Aktuelle Tabelle auslesen, „Next" klicken,
-     per `MutationObserver` auf neue Tabelle warten, wiederholen. Langsamer,
-     aber unabhängig davon, wie der Server das Formular genau erwartet.
-- Ergebnis wird als `catalog-portal.json` heruntergeladen (Blob-Download aus
-  der Konsole) und von Oskar nach `data/` gelegt und committet.
-- Regeln: nur Lesen, eigener Account, gedrosselt, keine personenbezogenen
-  Daten außer öffentlich gelisteten Dozentennamen. Dozenten-IDs (`p_jsh`)
-  werden *nicht* gespeichert.
-- Risiko: Das Snippet kann ich nur gegen den Dump schreiben; die erste echte
-  Ausführung wird Iterationen brauchen (Token-Handling, Encoding). Deshalb
-  beide Strategien. Ein erster Test mit 3 Seiten vor dem Volllauf.
+**Offen:** Ob Safari einen Bookmarklet-Klick als Nutzergeste wertet, ist nur am
+echten Portal zu prüfen. Falls nicht, bleibt es bei „einmal Pop-ups erlauben" —
+aber mit klarer Ansage statt stillem Download.
 
-**Datenformat.** `data/catalog-portal.json`:
+**UX-Runde 2026-09-28 (nach Oskars Rückmeldungen):** Fortschrittspanel auf
+der Portalseite (`js/portalOverlay.js`, von beiden Scrapern geladen — ohne es
+laufen sie weiter, nur mit Konsolenausgabe); Dialog 780 px breit, Fakten in
+einer Zeile, jede zweite Zeile getönt; primäre Aktion neben „Close" statt
+darüber; nach der Übergabe scrollt der Dialog direkt zu den Fundstücken;
+`window.name = "thu-planner"`, damit ein bereits offener Planer-Tab
+wiederverwendet wird statt einen neuen zu stapeln.
 
-```json
-{
-  "source": "Tsinghua Info portal, Query courses open this semester",
-  "snapshot": "2026-09-2x", "semester": "2026-2027 Autumn",
-  "courses": [{
-    "key": "00040172-92",
-    "number": "00040172", "seq": "92",
-    "titleEn": "Future Disaster Control", "titleCn": "未来灾害调控",
-    "credits": 2, "dept": "Department of Hydraulic Engineering",
-    "instructor": "张嘎", "time": "2-6(week 1-16)", "features": ""
-  }]
+**Semester-Schutz:** Woche 1 dieses Planers ist ein festes Datum
+(14.09.2026). Ein Stundenplan aus einem anderen Semester würde auf dieselben
+Wochennummern gemappt — plausibel aussehend und um Monate daneben. `SEMESTER`
+in `core.js` benennt den Bezug, der Import vergleicht ihn mit `p_xnxq` aus der
+Portalseite und **lehnt einen fremden Stundenplan ab**, statt ihn falsch
+einzusortieren.
+
+**Katalog wird für den Import automatisch geladen:** Die Stundenplan-Seite
+kennt weder Credits noch Dozent oder Department. `acceptPortalPayload()` wartet
+deshalb auf `ensureCatalog()`, bevor es den Diff baut — sonst blieben diese
+Felder leer, solange man den Katalog-Tab nie geöffnet hatte.
+
+**Umgesetzt:** `js/scheduleImport.js` — `scheduleToCourses()` (Meetings →
+Kurse mit Slots, Credits/Dozent/Titel-CN aus dem Katalog, Status `booked`),
+`diffPlan()` (neu / abweichend / nicht registriert), `applyScheduleDiff()`
+(baut ein neues Array, mutiert nie, nimmt nur Angehaktes). Dreiteilige
+Vorschau im Import-Dialog mit Checkbox pro Feld und Vorher→Nachher; ein
+`commit()` + `toastUndo`. `slot.room` landet als `LOCATION` in der `.ics`.
+19 Tests in `tests/scheduleImport.test.mjs`.
+
+**Zuordnung Plan ↔ Portal (beim Testen gelernt):** Erst `catalogRef`, dann
+exakt `number+seq`, dann **`number` allein — aber nur, wenn genau ein
+Plan-Kurs diese Nummer hat.** Grund: die Seed-Kurse tragen andere Sequences
+als das Portal (Frontiers: Plan `0`, Portal `1`), und ein reiner
+`number+seq`-Vergleich listete denselben Kurs gleichzeitig als „neu" und als
+„nicht registriert". Die Sequence wird stattdessen als eigenes Diff-Feld
+angeboten. Bei mehreren Sections desselben Kurses im Plan wird bewusst nicht
+geraten.
+
+
+
+### 5.1 Warum das mehr ist als „Kurse anlegen"
+
+Der Schedule ist die **einzige verlässliche Antwort auf „wofür bin ich
+tatsächlich eingeschrieben"**. Der Import ist deshalb ein *Abgleich*, kein
+stumpfes Einfügen. Drei Fälle:
+
+| Fall | Erkennung | Aktion (vorgeschlagen, abwählbar) |
+|---|---|---|
+| **Neu** | `number+seq` im Schedule, nicht im Plan | Kurs anlegen, Status `booked`, Credits/Dozent/Dept aus dem Katalog nachschlagen |
+| **Abweichung** | im Plan *und* im Schedule, Felder unterschiedlich | Pro Feld anzeigen: „Portal: Di Block 3 · Plan: Di Block 4" mit Checkbox „Portal übernehmen". Raum wird immer vorgeschlagen (Plan hat meist keinen) |
+| **Fehlt** | im Plan `booked`/`bid`, nicht im Schedule | Warnung „nicht im Portal registriert" + Vorschlag Status → `option`. **Nie automatisch löschen** |
+
+Das ist der Punkt, an dem die App echte Planungsarbeit abnimmt: sie zeigt
+still, dass ein Kurs, den man für gebucht hielt, gar nicht registriert ist.
+
+### 5.2 Neues Modul `js/scheduleImport.js`
+
+```js
+parseSchedulePage(docOrHtml)        // identisch zum Scraper (eine Quelle!)
+scheduleToCourses(meetings, catalog)// Meetings → Kurs-Objekte, Katalog-Anreicherung
+diffPlan(state.courses, imported)   // -> {added:[], changed:[{id, field, mine, portal}], missing:[]}
+applyScheduleImport(selection)      // baut neues courses-Array, EIN commit()
+```
+
+- Zwingend über `commit("Import portal schedule", {courses})` → undo-fähig,
+  danach `toastUndo(...)` (Mutation Rule aus CLAUDE.md).
+- IDs: bestehende Kurse behalten ihre ID. Neue Kurse aus dem Schedule bekommen
+  `sch-<number>-<seq>`, analog zu `cat-<key>`, plus
+  `catalogRef {source:"schedule", key:"<number>-<seq>"}`, damit spätere
+  Re-Importe zuordnen können. Kurse, die schon `cat-…` sind, behalten ihre ID —
+  Zuordnung läuft immer über `number+seq`, nie über die ID.
+- Kein Feld wird still überschrieben: `applyScheduleImport` schreibt nur, was
+  in der Vorschau angehakt ist.
+
+### 5.3 UI
+
+Ein Modal wie das bestehende `.xls`-Modal (gleiche `preview`-Tabelle
+wiederverwenden), erreichbar aus **Add/Edit** (Phase 4) und aus **Data &
+sharing**:
+
+1. Drei Eingabewege nebeneinander (siehe Phase 5 für die Herkunft der Daten):
+   - **JSON einfügen/Datei wählen** (Ausgabe des Scrapers),
+   - **Quelltext der Schedule-Seite einfügen** (⌥⌘U → ⌘A → ⌘C) — braucht keine
+     Konsole, keine Bookmarklets, funktioniert immer,
+   - *bestehend:* `.xls`-Import bleibt als dritter Weg.
+2. Vorschau mit drei Abschnitten (Neu / Abweichungen / Fehlt), Checkboxen,
+   editierbaren Zeiten, Zähler „5 Kurse · 12 CP · 1 Warnung".
+3. „Import" → ein `commit`, Toast mit Undo.
+
+### 5.4 Akzeptanz Phase 2
+
+- Dump importieren in einen leeren Plan → 6 Kurse, Status `booked`, Räume
+  gesetzt, Credits aus dem Katalog, Wochenansicht zeigt sie korrekt.
+- Zweiter Import derselben Datei → „0 neu, 0 Abweichungen" (idempotent).
+- Plan mit Seed-Kursen importieren → Digital Economy/Frontiers/Leadership
+  werden als Abweichung (Raum fehlt) erkannt, nicht dupliziert; Elementary
+  Chinese B erscheint unter „fehlt im Portal".
+- Undo stellt den Zustand vor dem Import exakt wieder her.
+- Alte localStorage-Payload (ohne `slot.room`) lädt unverändert.
+
+---
+
+## 6. Phase 3 — Kursdetails zu *meinen* Kursen (Quelle C) ✅ (umgesetzt 2026-09-28)
+
+**Umgesetzt:** `parseCourseDetail(doc)` in `js/scheduleParse.js`, Abruf im
+Stundenplan-Scraper (`thuSchedule({details:false})` schaltet ihn ab), Feld
+`course.detail`, Anzeige als aufklappbarer Block im Edit-Formular,
+`detail` als eigenes Diff-Feld im Import, Ausschluss aus dem Share-Link
+(bleibt im JSON-Export). 6 Tests in `tests/detail.test.mjs`.
+
+**Am echten Portal verifiziert (2026-09-28).** Oskar hat einen HTML-Dump der
+Detailseite geliefert (`tests/fixtures/course-detail-live.html`, Kurs
+80511412). Der Parser liest **nach Label** („finde die Zelle mit dem Text
+‚Credit hours', nimm die nächste") statt nach Position oder Klasse — und trifft
+alle 13 Felder des echten Markups. Bestätigt hat der Dump außerdem: zwei
+Label/Wert-Paare pro Zeile, hunderte Leerzeilen in der Department-Zelle,
+„Credit" direkt neben „Credit hours", leere Zellen bei Instructor/Testing.
+Alles abgedeckt. Schlägt der Abruf trotzdem fehl, wird der Kurs importiert,
+nur ohne `detail`.
+
+**Zwei Funde aus dem Dump:**
+- Die Detailseite liefert `Course features` als **Code** (`01`), der Katalog
+  denselben Sachverhalt als Text („Taught in foreign language"). Der Import
+  legt deshalb `detail.featuresLabel` aus dem Katalog dazu; ein nackter Code
+  wird nie angezeigt.
+- `mergeCatalogSources()` warf bei Kursen, die in MBA-Liste *und* Portal
+  stehen, das `features`-Feld des Portals weg — bei allen 15 MBA-Kursen ging
+  damit die einzige Angabe zur Unterrichtssprache verloren. Gefixt.
+
+
+
+### 6.1 Was die Detailseite liefert
+
+Verifiziert am Screenshot `_Archive/Schedule-Info-Portal/click-details.png`
+(Kurs 70511131): Course number, Course sequence, Course title, Course
+department/school/college, Instructor name, **Credit hours** (16), Credit (1),
+**Testing methods**, **Textbooks**, **Reference books**, **Chinese
+description**, **English description** (≈1,5 KB Fließtext mit
+Sitzungsgliederung), **Course features**.
+
+### 6.2 Umfang: ~6 Seiten, nicht 692
+
+Die Detailseite ist **nur aus dem eigenen Stundenplan heraus verlinkt** (siehe
+Kasten in Abschnitt 1). Der Stundenplan-Scraper hat die fertigen URLs ohnehin
+schon in der Hand — sie stehen als `href` in genau den Zellen, die er liest:
+
+```
+xkJxs.vxkJxsJxjhBs.do?m=showKcDetail&p_kch=70511131&p_kxh=1&…&p_xnxq=2026-2027-1
+```
+
+Damit ist der „Detail-Scraper" kein eigenes Werkzeug mehr, sondern **ein
+zweiter Schritt im Stundenplan-Scraper**: Gitter lesen → für die ~6 gefundenen
+Kurse je eine Detailseite nachladen → alles zusammen zurückgeben.
+
+| | vorher geplant | **jetzt** |
+|---|---|---|
+| Seiten | 692 (konstruierte URLs) | **~6** (verlinkte URLs) |
+| Laufzeit | ~9 min | **~5 s** |
+| Datenmenge | 1,7 MB | **~15 KB** |
+| Drosselung/Resume | nötig | unnötig |
+| Eigene Ablage (IndexedDB) | nötig | **unnötig** |
+
+*Damit entfallen ersatzlos:* `tools/portal-details-scrape.js` als eigene Datei,
+der `snapshots/details`-Record, das Scope-Problem, die Rate-Limit-Sorge und
+`store.test.mjs`-Fälle für Details.
+
+### 6.3 Ablage: am Kurs im Plan
+
+Die Details gehören zu *deinen* Kursen, also in den Plan — nicht in einen
+Snapshot-Store:
+
+```js
+// optionales Feld am Kurs, Default undefined:
+detail: {
+  creditHours: 16, testing: "", textbooks: "", references: "",
+  descriptionEn: "1. Theoretical Background …",
+  descriptionCn: "1. 理论背景 …",
+  fetchedAt: "2026-09-28"
 }
 ```
 
-Grob 1 MB unkomprimiert; GitHub Pages liefert JSON gzip-komprimiert (≈150 KB).
-Wird nur geladen, wenn der Katalog-Tab geöffnet wird.
+6 × ~2,5 KB ≈ 15 KB — unkritisch für `localStorage` (Budget ~5 MB).
 
-**Merge & Modell.**
-- Katalog-Tab zeigt die Vereinigung beider Quellen. Gleiche Kursnummer in MBA-
-  und Portal-Datei → ein Eintrag, MBA-Felder (Raum, Beschreibung) gewinnen,
-  Portal liefert Sequence(n).
-- `time` wird beim Add über `slotsFromCode()` in Slots übersetzt. Dafür
-  `slotsFromCode()` erweitern: Wochenbereich *pro Code* behalten →
-  optionales `slot.weeks` (Semantik `slot.weeks || course.weeks`, gelesen von
-  `renderGrid`, `findClashes`, `weekStrip`, `buildICS`); `course.weeks` =
-  Union.
-- Formular bekommt pro Meeting-Zeile ein optionales Wochenfeld (klein,
-  Placeholder „same as course"), damit importierte Kurse editierbar bleiben.
-- IDs `cat-<number>-<seq>`.
+**Zwei Regeln dazu:**
+1. `detail` ist optional und wird in `load()` nicht vorausgesetzt (Storage-Regel).
+2. **`detail` wird aus dem Share-Link ausgeschlossen.** `#plan=<base64>` würde
+   sonst um ~20 KB wachsen und in manchen Messengern/Mailclients abgeschnitten.
+   Im JSON-Export bleibt es drin (dort gibt es keine Längengrenze).
 
-**Filter im Tab (zusätzlich zu Phase 4):** Department (Dropdown aus den Daten),
-Block, Wochenbereich („runs in week N"), Quelle (MBA-Liste / Portal), und
-**„Fits my plan" (= H)**: Overlap-Prüfung gegen alle `booked`/`bid`-Kurse mit
-Woche × Tag × Zeit. Bei 5.000 Kursen: Filter erst nach Eingabe, Ergebnis auf
-200 Karten begrenzt + „Show more".
+### 6.4 Anzeige
 
-**Optional in dieser Phase: G — Alternative Sections.** In `renderClashes()`
-pro Clash nachsehen, ob im Katalog eine andere Sequence desselben Kurses
-existiert, die mit dem Rest des Plans nicht kollidiert; Vorschlag + „Swap"
-(ersetzt Slots/Weeks/Seq, per `commit()` undo-fähig). Erst bauen, wenn der
-Snapshot zeigt, dass es genügend Mehrfach-Sequences gibt.
+- **Kursdetail im Edit-Formular / in der Kursliste:** aufklappbarer Abschnitt
+  „Course description" mit EN-Text, darunter klein Prüfungsform und Lehrbücher.
+- **Katalog-Tab:** unverändert. Portal-Katalogeinträge haben weiterhin keine
+  Beschreibung — die 15 MBA-Kurse behalten ihre aus den PDFs. Ist ein
+  Katalogkurs bereits im Plan *und* hat `detail`, wird die Beschreibung dort
+  mitgezeigt (kostet drei Zeilen).
+- Kein Kurs ohne `detail` zeigt eine Lücke oder einen Fehler — der Abschnitt
+  erscheint einfach nicht.
 
-**Aktualisierung.** Snapshot-Datum sichtbar im Tab. Erneuter Lauf des
-Snippets = neue Datei = Commit. Kein automatisches „Update my plan from
-catalog" — würde manuell korrigierte Räume überschreiben. Stattdessen pro Kurs
-mit `catalogRef` ein Hinweis „Catalog says Tue Block 3 — your plan says Tue
-Block 4" mit „Take catalog values" (später, wenn Bedarf).
+### 6.5 Akzeptanz Phase 3
 
-**Akzeptanz.** Snippet liefert 5.032 Zeilen (Zähler gegen Portal-Angabe
-geprüft); Tab zeigt Department-Filter; Suche „Disaster" findet 3 Kurse;
-„Fits my plan" blendet alles aus, was mit Digital Economy (Mo 8:00–11:25,
-W 1–3,5) kollidiert; Add eines Kurses mit zwei Codes erzeugt zwei Slots mit
-korrekten Wochen.
+- Stundenplan-Scrape auf dem echten Portal liefert für alle belegten Kurse
+  zusätzlich `detail`; Kurs 70511131 exakt mit den Werten aus dem Screenshot
+  (Credit hours 16, Credit 1, beide Beschreibungen vollständig, kein Mojibake).
+- Fällt eine Detailseite aus (Timeout, 500), wird der Kurs trotzdem importiert —
+  nur ohne `detail`, mit stiller Notiz im Ergebnis-Log.
+- Zweiter Import überschreibt `detail` nur bei angehakter Zeile (Vorschau-Regel).
+- Share-Link eines Plans mit Details bleibt unter 4 KB.
+- Alter Plan ohne `detail` lädt und rendert unverändert.
 
----
+**Risiko:** niedrig. Die URLs stammen aus der Seite selbst (keine geratenen
+Parameter), es sind sechs GETs in derselben Session, und ein Fehlschlag kostet
+nur ein optionales Feld.
 
-### Phase 6 — Mobile (Safari auf iPhone), ohne Desktop-Regression
 
-**Befund (375×812, echte Live-Seite, 2026-09-22):** Grundsätzlich benutzbar,
-aber:
-- Header belegt ~40 % des Bildschirms (Titel, Untertitel, CP-Block, Goal,
-  Tabs in *zwei* Zeilen).
-- Week View scrollt horizontal, zeigt ~1,7 Tage; man sieht die Woche nie
-  auf einmal.
-- Course List ist eine 1.320-px-Tabelle → horizontales Scrollen über 4
-  Bildschirmbreiten.
-- Filter-Chips stapeln sich untereinander (4 Zeilen).
-- Formular ist bereits brauchbar (2 Breakpoints vorhanden).
-- Now-Badge überlappt Inhalt; Modals sind nicht getestet.
+## 7. Phase 4 — „Add / edit course" umbauen
 
-**Grundregel für Null-Desktop-Regression.** Alle Änderungen leben
-ausschließlich in `@media (max-width: 640px)` (Phone) und ggf.
-`@media (max-width: 900px)` (Tablet/kleines Fenster) — *keine* Änderung an
-bestehenden Regeln außerhalb dieser Blöcke. Ausnahme sind additive
-Attribute im Markup (`data-label` an `<td>`), die Desktop nicht rendert.
-Verifikation: Playwright-Screenshots bei 1280 und 1440 px *vor* und *nach*
-jeder Änderung, Pixelvergleich; Abweichung = Fehler.
+### 7.1 Problem
 
-**Design-Entscheidungen pro Bereich.**
-1. **Header:** kompakt — Titel einzeilig kleiner, „6 CP · booked · 4 courses"
-   und Goal in *einer* Zeile, Tabs als *eine* horizontal scrollbare Zeile mit
-   Kurzlabels (Week · List · Add · Catalog · Data) statt Umbruch. Kein
-   Bottom-Tab-Bar (kollidiert mit Now-Badge und iOS-Home-Indicator).
-2. **Week View — Kompaktmodus mit 5 Spalten:** alle Tage sichtbar (Gutter
-   40 px + 5 × ~65 px), Event zeigt nur Titel (2–3 Zeilen, abgeschnitten) und
-   Zeit; Raum/CP entfallen. Tipp auf ein Event öffnet ein **Bottom-Sheet** mit
-   allen Details + Button „Edit" — statt direkt ins Formular zu springen.
-   Das ist das Muster jeder Stundenplan-App und die einzige Variante, bei der
-   man die Woche als Ganzes sieht. Tages-Pager (ein Tag pro Bildschirm) wurde
-   verworfen: man will beim Planen Clashes *sehen*.
-3. **Course List → Karten:** per CSS die Tabelle in Karten umlegen
-   (`tr` als Karte, `td` als Zeile mit `data-label`), Status-Select bleibt
-   bedienbar, Weekstrip bleibt. Kein zweiter Renderer.
-4. **Filter-Chips:** horizontal scrollbare Zeile.
-5. **Modals** (ICS, Print, Paste, XLS, Help): als Sheet von unten,
-   `max-height: 100dvh`, obere Ecken rund, Buttons unten fixiert.
-6. **Katalog (Phase 4/5):** Karten sind schon mobil; nur Filterzeile
-   scrollbar machen.
-7. **Katalog auf dem Handy:** Clash-Details und Remarks sind auf dem Desktop
-   nur als Tooltip erreichbar (kein Hover auf Touch) → im Detailbereich der
-   Zeile ausschreiben; Tabelle als Karten- oder 2-Spalten-Layout, Pager
-   bleibt.
-8. **iOS-Spezifika:** `font-size ≥ 16px` in Inputs (sonst zoomt Safari beim
-   Fokus), `viewport-fit=cover` + `env(safe-area-inset-bottom)` für Badge und
-   Sheets, `dvh` statt `vh`, Touch-Ziele ≥ 44 px, `-webkit-tap-highlight-color`.
-9. **ICS-Handoff** über Share-Sheet (Phase 3).
-10. **PWA light:** `manifest.json` + `apple-touch-icon` + `theme-color`, damit
-   „Zum Home-Bildschirm" ein Icon und Vollbild ergibt. Kein Service Worker.
-   Erledigt nebenbei das fehlende Favicon.
-11. **Print** bleibt unberührt (eigener `@media print`-Block).
+Der Tab heißt heute „Add a course manually" und zeigt zuerst ein leeres
+Formular mit ~12 Feldern. Das war richtig, als es 4 Seed-Kurse und keinen
+Katalog gab. Mit 5.020 Katalogkursen und Schedule-Import ist Tippen der
+**seltenste** Weg — und der fehleranfälligste (Kursnummern, Wochen, Blöcke).
 
-**Umsetzung.** Reihenfolge: Header/Tabs → Week View kompakt + Sheet → Liste
-→ Modals → iOS-Details → PWA light. Jeder Schritt mit Desktop-Screenshot-Diff.
-Neue Dateien: `js/sheet.js` (Detail-Bottom-Sheet, auch von Desktop nutzbar,
-dort aber nicht aktiv), `manifest.json`, `assets/icon-*.png`.
+### 7.2 Neue Struktur des Tabs (Reihenfolge = Häufigkeit)
 
-**Akzeptanz.** iPhone Safari (Oskar, echtes Gerät): alle fünf Tabs erreichbar
-ohne Umbruch; Woche 1 zeigt Mo–Fr auf einem Bildschirm; Tipp auf Digital
-Economy öffnet das Sheet; Course List ist ohne horizontales Scrollen lesbar;
-ICS-Export öffnet das Share-Sheet; kein Zoom beim Fokus eines Feldes. Desktop
-1280/1440: Screenshot-Diff = 0.
+```
+┌ Add courses ─────────────────────────────────────────────┐
+│ ① Import my portal schedule            [ Import… ]  ★neu │
+│    „Holt alle Kurse, für die du registriert bist —       │
+│     mit Raum. Empfohlener Weg."                          │
+│                                                          │
+│ ② Search the catalog                                     │
+│    [ 🔍 number, title or instructor …            ]       │
+│    → Live-Trefferliste (max. 8) aus dem Merged-Katalog,  │
+│      pro Treffer: Titel, Nr-Seq, CP, Zeit, Clash-Hinweis,│
+│      [ Add ] und [ Edit before adding ]                  │
+│                                                          │
+│ ③ Other ways ▾ (eingeklappt)                             │
+│    [ .xls importieren ] [ Kurszeile einfügen ]           │
+│                                                          │
+│ ④ Enter manually ▾ (eingeklappt)                         │
+│    das heutige Formular, unverändert                     │
+└──────────────────────────────────────────────────────────┘
+```
+
+- **Der Edit-Fall bleibt wie er ist.** Klick auf eine Zeile in der Kursliste →
+  Tab wechselt, Formular ist aufgeklappt und gefüllt, Überschrift „Edit
+  course". Nur der *leere* Zustand wird umgebaut. `fillForm`/`readForm`/
+  `editCourse` bleiben unangetastet → kein Regressionsrisiko für Edit.
+- **② ist kein zweiter Katalog-Tab**, sondern nur ein Suchfeld auf
+  `CATALOG.entries` (lazy `ensureCatalog()`), das „Edit before adding" kann:
+  Katalogeintrag → `catalogEntryToCourse()` → `fillForm()` ohne zu speichern.
+  Genau die Lücke, die der Katalog-Tab heute lässt (dort nur Ein-Klick-Add).
+- **Im Edit-Formular neu:** hat der Kurs `catalogRef`, erscheint über dem
+  Formular ein Band „Catalog: Tue Block 3, A101, weeks 1-3,5-8 —
+  [Werte übernehmen]". Löst das alte Backlog-Item „Catalog says … your plan
+  says …" mit ~20 Zeilen.
+- **Meetings-Editor:** pro Zeile ein optionales `room`-Feld (Phase 1).
+
+### 7.3 Akzeptanz Phase 4
+
+- Tab ohne aktiven Edit zeigt Import + Suche zuerst; Formular ist eingeklappt.
+- Suche „Firm Valuation" → Treffer mit Clash-Hinweis, „Add" legt den Kurs an
+  (ein `commit`, Undo funktioniert).
+- „Edit before adding" füllt das Formular, **ohne** zu speichern; Abbrechen
+  hinterlässt keinen Kurs.
+- Klick auf eine Kursliste-Zeile verhält sich exakt wie heute.
+- Desktop-Layout der übrigen Tabs unverändert.
 
 ---
 
-## 4. Nice-to-have (kurz, aber konkret genug zum Einordnen)
+## 8. Phase 5 — Scraper von der Planner-Seite starten
 
-- **Bidding-Helfer.** Für Kurse mit Status `bid`: eine Priorität (1–n) und ein
-  optionaler Fallback-Kurs („wenn das Bidding scheitert → Firm Valuation").
-  Die App prüft die Fallback-Kette auf Clashes und zeigt eine Tabelle „Best
-  case / Worst case" mit CP-Summe. Datenmodell: `bidPriority`, `fallbackId`.
-  Aufwand M. Sinnvoll erst, wenn klar ist, wie das Bidding für Exchange
-  Students konkret abläuft.
-- **Szenarien (Plan A / Plan B).** Mehrere benannte Pläne in `state.plans`,
-  Umschalter im Header, Diff-Ansicht („B hat zusätzlich X, ohne Y"). Export
-  und Share pro Szenario. Aufwand M; berührt `load()/save()` (Migration von
-  `state.courses` → `state.plans[active].courses`). Undo muss szenario-bewusst
-  sein.
-- **QR-Sync.** Der bestehende Share-Link als QR-Code (kleine Inline-Library
-  oder handgeschriebener QR-Encoder, ~200 Zeilen) im Data-Tab; Handy scannt →
-  Plan geladen. Aufwand S. Grenze: Link-Länge bei > ~40 Kursen (QR Version 40
-  ≈ 2.9 KB) → vorher `lz-string`-Kompression des Hash.
-- **Tests.** Playwright-Suite im Repo (`tests/`), Smoke-Flows: Seed laden,
-  Kurs anlegen, Clash erkennen, ICS erzeugen (Inhalt prüfen), Katalog-Add,
-  Undo, Mobile-Viewport. Plus Desktop-Screenshot-Diff aus Phase 6 als fester
-  Test. Aufwand M einmalig, danach spart es jede Session Zeit.
-- **Dark Mode.** CSS-Custom-Properties existieren bereits (`--ink`, `--card`,
-  `--line`…) → `@media (prefers-color-scheme: dark)` mit zweitem Token-Satz +
-  manueller Schalter. Statusfarben brauchen eigene Dark-Varianten. Print
-  bleibt hell. Aufwand S–M.
+### 8.1 Was **nicht** geht (und warum, damit es nicht nochmal diskutiert wird)
 
-## 5. Backlog (eine Liste für alles Aufgeschobene)
+Die Planner-Seite kann das Portal **niemals selbst abfragen**: anderes Origin,
+kein CORS-Header, Session-Cookie, und die Seite ist statisch (kein Backend, das
+proxyen könnte). Jede Lösung muss den Code also **im Kontext der Portal-Seite**
+ausführen. Es bleiben: Konsole (heute), Bookmarklet, Browser-Extension. Eine
+Extension ist für einen Nutzer plus ein paar Kommiliton:innen absurd viel
+Aufwand (Store-Review, Signierung, zwei Browser) → raus.
 
-Offen, noch nicht eingeplant — sortiert nach Nähe zum Scope:
+### 8.2 Empfehlung: Bookmarklet + Rückgabe per `postMessage`
 
-- **ICS respektiert Overrides/Feiertage** — kommt mit Phase 3, bis dahin
-  exportiert der Kalender verschobene Sitzungen noch am Normaltermin.
-- **Feiertage per UI anlegen** (unter *Data & sharing*), gespeichert als
-  `state.holidaysExtra` im selben Format wie `data/holidays.json`; bis dahin
-  ist die JSON-Datei die einzige Quelle.
-- **Uni-weite Make-up-Regel** („Sa 10. Okt = Donnerstagsplan") — würde beim
-  Aktivieren automatisch Overrides für alle betroffenen Sitzungen anlegen;
-  nutzt denselben Mechanismus wie Phase 2.
-- **Katalog: „Take catalog values"** pro Kurs mit `catalogRef`, wenn Snapshot
-  und Plan auseinanderlaufen (siehe Phase 5, Abschnitt Aktualisierung).
-- **G — Alternative Sections bei Clash** (Phase 5, optional). Vorstufe:
-  Badge „N sections" an Katalogzeilen mit mehreren Sequences (427
-  Kursnummern im Snapshot), Klick filtert auf die Nummer.
-- **Katalog: Default-Sortierung** (MBA zuerst, dann Portal nach Nummer) —
-  Alternative alphabetisch; offen.
-- **Klick auf leeren Block → Katalog vorgefiltert** (H, Ausbaustufe).
-- **Undo-History über Reload hinweg** (sessionStorage) — nur falls es im
-  Alltag stört, dass ⌘Z nach einem Reload leer ist.
-- Nice-to-haves aus Abschnitt 4: Bidding-Helfer, Szenarien, QR-Sync, Tests,
-  Dark Mode.
+Mit der Entscheidung aus Phase 0 ist dieser Abschnitt **keine Bequemlichkeit
+mehr, sondern der einzige Weg, wie irgendjemand außer Oskar an einen Katalog
+kommt.** Entsprechend gut muss er erklärt sein.
 
-Verworfen (nicht wieder vorschlagen):
+**Ein neuer Abschnitt „Portal tools" im Tab *Data & sharing*** mit:
 
-- **Learning-Agreement-Tracker** — der vorhandene Credit-Goal-Balken bleibt,
-  wird aber nicht ausgebaut.
-- **Drag & Drop / Resize in der Week View** — Kurszeiten sind fix; ohne
-  persönliche Blöcke gibt es nichts Sinnvolles zu verschieben.
-- **Persönliche Blöcke, Benachrichtigungen, Wegzeit-Warnungen, Prüfungs-
-  termine als eigene Verwaltung** — Kalender-Territorium, außerhalb des Scopes.
-- **Webcal-Abo statt Datei-Import** — bräuchte pro Nutzer eine gehostete Datei;
-  nur für Oskar selbst machbar (eigene `.ics` im Repo). Bei Bedarf als
-  Einzelfall-Lösung.
+1. **Zwei Bookmarklet-Links zum Ziehen in die Lesezeichenleiste:**
+   „📅 THU Schedule" (holt Stundenplan **inklusive Kursdetails**, Phase 3) und
+   „📚 THU Catalog". Inhalt:
 
-## 6. Querschnitt
+   ```js
+   javascript:(function(){var s=document.createElement('script');
+   s.src='https://raksoo.github.io/TsinghuaCoursePlanner/tools/portal-schedule-scrape.js?'+Date.now();
+   document.body.appendChild(s);})()
+   ```
 
-- **Doku:** `CLAUDE.md` und `README.md` nach jeder Phase nachziehen (Modul-
-  liste, Datenmodell mit `overrides`/`slot.weeks`/`catalogRef`, Load-Order, neue `data/`-
-  und `tools/`-Verzeichnisse). `CLAUDE.md` ist heute schon hinter dem Code
-  (Share-Link, Goal, XLS-Import fehlen dort).
-- **Storage-Kompatibilität:** Kein Feature ändert das Format bestehender
-  Felder; neue Felder sind optional. Nutzer mit bereits geteilten Links
-  behalten ihre Daten. Falls doch eine Migration nötig wird (Szenarien), über
-  `STORE_KEY`-Version + Migrationsfunktion in `load()`.
-- **Deployment:** unverändert `git push` → GitHub Pages. `data/` und `tools/`
-  werden mit ausgeliefert (JSON muss öffentlich sein, Scraper-Skript ist
-  harmlos).
-- **Load-Order nach allen Phasen:** `core.js` → `history.js` →
-  `calendar.js` → `parser.js` → `weekView.js` → `summary.js` → `courseList.js` →
-  `archive.js` → `form.js` → `catalog.js` → `sheet.js` → `icsExport.js` →
-  `printView.js` → `dataShare.js` → `main.js`.
+   Das Portal läuft über **http**, die Planner-Seite über **https** → ein
+   https-Script in eine http-Seite zu laden ist erlaubt (blockiert wird nur die
+   Gegenrichtung). Bleibt als Risiko eine CSP auf der Portal-Seite; der Dump
+   zeigt keine, aber das ist erst am echten Portal sicher.
+   **Fallback**, falls doch blockiert: „Code kopieren"-Button (Clipboard) +
+   Konsolen-Anleitung — also der heutige Weg, nur bequemer.
+
+2. **Rückgabe der Daten ohne Datei-Gefummel — `postMessage`.** Der Scraper
+   öffnet am Ende die Planner-Seite und schiebt ihr das Ergebnis direkt zu:
+
+   ```js
+   const w = window.open("https://raksoo.github.io/TsinghuaCoursePlanner/?import=catalog");
+   // nach dem "ready"-Ping der Planner-Seite:
+   w.postMessage({ kind:"thu-import", what:"catalog", payload }, "https://raksoo.github.io");
+   ```
+
+   Das funktioniert **auch für die 1,7 MB des Katalogs** (structured clone,
+   keine URL-Längengrenze) und ist damit der Weg für beide Scraper.
+   Der Planner-seitige Empfänger:
+   - akzeptiert nur `event.origin === "http://zhjwe.cic.tsinghua.edu.cn"`,
+   - nur wenn die Seite per `window.opener` geöffnet wurde und `?import=` trägt,
+   - validiert die Nutzdaten wie in 3.3,
+   - **zeigt immer erst die Vorschau** und schreibt nichts ohne Klick.
+
+   Für den *Schedule* (< 2 KB) bleibt zusätzlich der einfachere Weg
+   `#import=<base64>` als Fallback, falls Popups blockiert sind; der
+   Hash-Mechanismus existiert schon für `#plan=` und wird nach dem Lesen aus
+   der Adresszeile entfernt.
+
+3. **Immer vorhandener Notweg (ohne Bookmarklet, ohne Konsole):** Download der
+   JSON-Datei + Datei-Picker in der App; für den Schedule zusätzlich
+   „Quelltext der Seite einfügen" (Phase 2, 5.3).
+
+### 8.3 Antwort auf „Katalog-Scraper oder Schedule-Scraper von der Seite aus?"
+
+**Es gibt genau zwei Scraper** — der Detail-Abruf ist seit Abschnitt 6 kein
+eigenes Werkzeug mehr, sondern Schritt 2 im Stundenplan-Scraper:
+
+| | 📅 Schedule (B + C) | 📚 Katalog (A) |
+|---|---|---|
+| Was | meine belegten Kurse + Raum + Wochen, **danach ~6 Detailseiten** | alle 5.020 Kurse (Titel, Nr, CP, Dept, Dozent, Zeit, Sprache) |
+| Wer führt aus | jede:r, oft (nach jeder Belegungsänderung) | jede:r, 1× pro Semester |
+| Laufzeit | **~5 s** | ~4 min |
+| Ergebnis landet | `localStorage` (der Plan, inkl. `course.detail`) | IndexedDB `snapshots/catalog` |
+| Rückweg | `postMessage`, sonst `#import=`, sonst Quelltext einfügen | `postMessage`, sonst Datei-Picker |
+| Platz in der UI | prominent im Add-Tab (①) | „Portal tools" + Hinweis-Panel im leeren Katalog-Tab |
+
+**Reihenfolge für neue Nutzer:innen** (gehört als nummerierte Anleitung in den
+Katalog-Tab): Katalog importieren (einmalig) → Stundenplan importieren
+(regelmäßig). Mehr Schritte gibt es nicht.
+
+### 8.4 Akzeptanz Phase 5
+
+- Bookmarklet auf der eingeloggten Schedule-Seite geklickt → nach < 2 s öffnet
+  sich der Planner mit gefüllter Import-Vorschau.
+- Katalog-Bookmarklet: 5.020 Zeilen kommen per `postMessage` an, Vorschau
+  zeigt Anzahl + Semester + Datum, nach „Import" liegen sie in IndexedDB.
+- Bei blockiertem Script erscheint eine verständliche Meldung + Kopier-Button.
+- Bei blockiertem Popup: Hinweis + Download-Fallback, keine Sackgasse.
+- `#import=` mit kaputtem Base64 → Fehlermeldung, kein Datenverlust, kein
+  kaputter State.
+- `postMessage` von einem **fremden** Origin wird ignoriert (Test mit
+  manipuliertem Sender).
+- Die Portal-Seite wird durch das Bookmarklet nicht verändert (nur gelesen).
+
+---
+
+## 9. Phase 6 — Tests (ab Phase 1 mitlaufend)
+
+Bis heute wird nur ad hoc im Browser geklickt. Mit Scrapern, Merge-Logik und
+einem Import, der bestehende Pläne anfasst, reicht das nicht mehr.
+
+### 9.1 Setup — ohne npm, ohne Build
+
+Die Module sind plain Scripts mit globalen Funktionen. Ein winziger Harness
+lädt sie in einen `vm`-Context, ganz ohne die App anzufassen:
+
+```
+tests/
+  harness.mjs            // liest js/*.js, evaluiert sie in einem vm-Context,
+                         // stellt globals bereit (kein Umbau der App nötig)
+  fixtures/
+    schedule-page.html   // aus _Archive/Schedule-Info-Portal/ (RTF → HTML)
+    course-detail.html   // Detailseite 70511131
+    catalog-portal-20.json
+    state-old-v1.json    // localStorage-Payload ohne slot.weeks/slot.room
+  parser.test.mjs
+  schedule.test.mjs
+  catalog.test.mjs
+  ics.test.mjs
+  storage.test.mjs
+```
+
+Lauf: `node --test tests/` — Node ≥ 18.
+
+DOM: `parseSchedulePage` nimmt ein `document`-Objekt entgegen (siehe 4.2), statt
+sich `document` global zu greifen. Im Browser ist das das echte DOM, im Test
+eins aus **linkedom**. Zusammen mit **fake-indexeddb** (für `store.test.mjs`)
+sind das die *einzigen zwei* Dev-Dependencies
+(`npm i -D linkedom fake-indexeddb`, `node_modules/` gitignored). Die App selbst
+bleibt dependency-frei und ohne Build-Schritt; `package.json` enthält nur
+`"test": "node --test tests/"`.
+
+### 9.2 Was getestet wird (Reihenfolge = TDD, Test zuerst)
+
+| Datei | Fälle |
+|---|---|
+| `parser.test.mjs` | `slotsFromCode` mit einem/mehreren Codes, gleichen/verschiedenen Wochen; `parseWeeks`/`compressWeekList` Roundtrip; kaputte Eingaben |
+| `schedule.test.mjs` | `parseSchedulePage`: 6 Meetings aus dem Dump; fünffacher Dump → trotzdem 6; Block-Merge 1+2; chinesische Räume; Zelle mit zwei Kursen; leere Seite |
+| | `diffPlan`: neu / geändert / fehlt; Idempotenz beim zweiten Import; nichts wird ohne Auswahl geschrieben |
+| `catalog.test.mjs` | `mergeCatalogSources`: MBA gewinnt bei gleicher Nummer; mehrere Sequences erzeugen mehrere Einträge; `features` → Sprachfilter |
+| `ics.test.mjs` | `icsOccurrences` überspringt Feiertage; Override landet am neuen Datum mit gleicher UID; Beijing→UTC; `LOCATION` aus `slot.room \|\| course.room` |
+| `storage.test.mjs` | **alte Payload lädt unverändert** (kein `slot.weeks`, kein `slot.room`, kein `overrides`, kein `icsSeq`); `load()` schreibt nicht zurück |
+| `store.test.mjs` | `snapshotPut`/`Get`/`Clear` (IndexedDB via `fake-indexeddb`); fehlende IndexedDB → `null` statt Exception; defekter Import lässt den alten Snapshot stehen; Quota-Fehler beim Katalog lässt den `localStorage`-Plan unberührt |
+| `detail.test.mjs` | Detailseite → Felder (Fixture `course-detail.html`); fehlende Felder bleiben leer statt `undefined`; ausgefallene Detailseite → Kurs ohne `detail`, kein Abbruch; `detail` fehlt im Share-Link, ist aber im JSON-Export enthalten |
+| `import.test.mjs` | `postMessage`-Empfänger: fremdes Origin wird ignoriert, fehlendes `?import=` wird ignoriert, gültige Nutzdaten erzeugen eine Vorschau **ohne** zu schreiben |
+
+
+**Ziel 80 % Coverage auf den reinen Funktionen** (Parser, Merge, Diff, ICS,
+Storage). UI-Rendering wird nicht unit-getestet.
+
+### 9.3 E2E (optional, danach)
+
+Playwright gegen den lokalen Server (`.claude/launch.json` → :8765), drei
+Journeys: *Schedule importieren → Wochenansicht stimmt*, *Katalogkurs adden →
+Clash-Box erscheint*, *ICS exportieren → Datei enthält N Events*. Erst bauen,
+wenn Phasen 1–4 stehen.
+
+---
+
+## 10. Phase 7 — Alternative Sections (Rest aus alt-Phase 5)
+
+Jetzt begründet: **427 Kursnummern haben mehrere Sequences.** In
+`renderClashes()` pro Clash prüfen, ob eine andere Sequence desselben Kurses
+kollisionsfrei liegt → Vorschlag + „Swap" (ersetzt Slots/Weeks/Seq/Raum, per
+`commit()` undo-fähig). Setzt Phase 0 voraus (ohne importierten Katalog gibt es
+nichts zu durchsuchen) — bei leerem Snapshot entfällt der Vorschlag still.
+**Akzeptanz:** Bei einem konstruierten Clash mit einem Kurs, der eine zweite
+Sequence hat, erscheint der Vorschlag; „Swap" löst den Clash; Undo stellt her.
+
+---
+
+## 11. Phase 8 — Mobile (unverändert aus alt-Phase 6)
+
+Befund vom 22.09. (375 px): benutzbar, aber Header frisst ~40 % der Höhe, Tabs
+brechen um, Wochengitter scrollt seitlich, Kurstabelle ist 1.320 px breit.
+Vorgehen wie dort beschrieben, **Desktop muss pixelgleich bleiben**. Details
+siehe `_Archive/PLANNING-v1-2026-09-22.md`, Abschnitt „Phase 6".
+Dazu gehört auch der offene Test des iOS-Share-Sheets beim `.ics`-Export.
+
+---
+
+## 12. Querschnitt: Regeln, die für alle Phasen gelten
+
+- **Keine Portaldaten im Repo.** `data/catalog-portal.json`, Detaildaten und
+  jeder weitere Portal-Snapshot bleiben gitignored — dauerhaft, nicht
+  „vorläufig". Wer das ändern will, muss vorher die Nutzungsbedingungen des
+  Portals klären. Committet wird nur selbst Erstelltes (MBA-Katalog aus den
+  PDFs, Feiertage, Department-Namen) und Code.
+- **Storage, zweigeteilt.** `localStorage["tsinghua-planner-v1"]` = der Plan,
+  unersetzlich, `STORE_KEY` bleibt. IndexedDB `thu-planner-data` = die
+  Snapshots, jederzeit neu scrapbar. Die beiden dürfen sich nie gegenseitig
+  beschädigen: kein Snapshot in `localStorage`, kein Plan in IndexedDB.
+  Neue Plan-Felder (`slot.room`, ggf. `course.detailRef`) sind **optional mit
+  Default in `load()`**; nichts wird umbenannt; `load()` schreibt nie zurück.
+  Jede Phase wird gegen `tests/fixtures/state-old-v1.json` geprüft.
+- **Nichts wird ohne Vorschau importiert.** Jeder Import (Schedule, Katalog,
+  Details, JSON, `.xls`, `postMessage`) zeigt erst eine Vorschau und schreibt
+  erst nach einem Klick.
+- **Mutation.** Alles über `commit(label, {courses, overrides})` + `toastUndo`.
+  Nie `state.courses` zuweisen, nie ein Kursobjekt in place ändern.
+- **Cache-Busting.** Bei jedem Deploy mit JS/CSS-Änderung alle `?v=` in
+  `index.html` in einem Rutsch hochzählen.
+- **Scraper-Ethik.** Nur lesen, nur eigener Account, gedrosselt (≥ 800 ms),
+  resumierbar, keine personenbezogenen Daten außer öffentlich gelisteten
+  Dozentennamen; Dozenten-IDs (`p_jsh`) werden verworfen. Kein Live-Zugriff aus
+  der App — Snapshots, immer.
+- **Alles, was in die Portal-Seite injiziert wird, bleibt reines ASCII.**
+  Die Portal-Seite ist `charset=gb2312`; ein `<script src>` ohne eigenes
+  Charset wird in der Kodierung des *Dokuments* dekodiert. Ein UTF-8-Zeichen
+  wird dann zu Mojibake — und ein zerschossenes Zeichen in einem Regex-Literal
+  ist ein SyntaxError, der still gar nichts definiert. GitHub Pages sendet
+  zufällig `charset=utf-8` und rettet uns; ein normaler Dev-Server nicht.
+  Nicht-ASCII als `\uXXXX` schreiben. Gilt für `js/scheduleParse.js` und
+  `tools/portal-*.js`; `tests/storage.test.mjs` erzwingt es.
+  (Am 2026-09-28 die harte Tour gelernt.)
+- **Ein Parser, zwei Aufrufer.** Scraper und App teilen sich
+  `parseSchedulePage` und `parseCourseDetail` (Phase 1/2/3). Kein zweiter
+  Parser.
+- **Nur verlinkte URLs abrufen, keine konstruierten.** Der Detail-Abruf nutzt
+  ausschließlich die `href`-Werte, die die Portalseite selbst ausliefert.
+  URL-Parameter zu raten, um an Seiten zu kommen, die das Portal nicht
+  verlinkt, ist keine Option — weder technisch verlässlich noch angemessen.
+- **Dateigröße.** Module bleiben unter 400 Zeilen. `catalog.js` (470) wird bei
+  der nächsten Berührung geteilt (`catalogData.js` / `catalogView.js`).
+
+---
+
+## 13. Backlog (nicht eingeplant, aber notiert)
+
+- **Studienstufe im Katalog unterscheiden (Undergrad / Grad / MBA).** Die
+  Stufe steckt offenbar in der ersten Ziffer der Kursnummer. **Oskar gibt die
+  genauen Ranges noch durch** — vorher nicht bauen. Danach klein:
+  `courseLevel(number)` in `catalog.js`, Badge in der Titelspalte, Filter-Chip
+  neben „Taught in English".
+  Randnotiz: Das Suchformular des Portals hat kein Stufen- oder Typfeld (am
+  Dump geprüft) — die Kursnummer ist das einzige verfügbare Signal.
+- **`showToXs` — mögliche Detailseite für *beliebige* Katalogkurse.** Jede
+  Katalogzeile verlinkt auf dem chinesischen Titel
+  `js.vjsKcbBs.do?m=showToXs&p_id=<dozentenid>;<kursnummer>`. Was diese Seite
+  zeigt, ist **ungeprüft** — falls sie dieselben Beschreibungen liefert wie
+  `showKcDetail`, wären Kursbeschreibungen doch für den ganzen Katalog
+  erreichbar (dann wäre die 692er-Idee wiederbelebbar). **Nächster Schritt:
+  eine solche Seite im Browser öffnen und als Dump ablegen** — erst dann
+  planen. Hinweis: Die URL enthält eine Dozenten-ID; die wird wie bisher nicht
+  gespeichert.
+- Exam arrangement (`jxmh.do?m=jxs_ksSearch`) — vierte Portal-Quelle, würde
+  Prüfungstermine liefern. Bewusst zurückgestellt: Prüfungsverwaltung wurde in
+  Ausbaustufe 2 als „Kalender-Territorium" ausgeschlossen. Falls doch:
+  als *Anzeige* im Kursdetail, nicht als eigene Terminverwaltung.
+- „Check enrollment status" (`xsJxs.xsJxsXjb.do?m=show`) — vermutlich
+  Anmeldestatus/Warteliste. Ungeprüft, könnte `bid` vs. `booked` automatisch
+  unterscheiden. Erst einen Dump ansehen.
+- `data/buildings.json` (Gebäude-Glossar, Phase 1.4).
+- Capacity/Enrollment-Zahlen: auf keiner der geprüften Seiten vorhanden.
+  Vermutlich nur in der Registrierungsmaske. Ungeprüft.
+- Kursliste: Raum-Spalte sortierbar; Filter „hat Raum".
+- Katalog: Sprachfilter aus `features` (fällt in Phase 0 quasi gratis an —
+  438 + 82 + 172 Kurse sind klassifizierbar).

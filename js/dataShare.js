@@ -102,7 +102,14 @@ function importJSONFile(file){
    ============================================================ */
 function sharePlan(){
   try{
-    const json = JSON.stringify({ v:1, courses: state.courses, goal: state.goal, overrides: state.overrides || {} });
+    // `detail` (the portal's course descriptions, ~2.5 KB each) is left out:
+    // it would push the link past what mail clients and messengers keep intact,
+    // and the receiver can fetch their own. The JSON export keeps it.
+    const slim = state.courses.map(c=>{
+      if(!c.detail) return c;
+      const copy = Object.assign({}, c); delete copy.detail; return copy;
+    });
+    const json = JSON.stringify({ v:1, courses: slim, goal: state.goal, overrides: state.overrides || {} });
     const url = location.origin + location.pathname + "#plan=" + btoa(unescape(encodeURIComponent(json)));
     const fallback = () => window.prompt("Copy this share link:", url);
     if(navigator.clipboard && navigator.clipboard.writeText){

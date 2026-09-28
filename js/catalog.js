@@ -3,15 +3,14 @@
 /* ============================================================
    Course catalog tab (feature: pick courses instead of typing them).
 
-   Two sources, both static JSON under data/, fetched lazily the
-   first time the tab opens:
+   Two sources:
    - catalog-mba.json — the MBA exchange list, curated once from the
      schedule + syllabus PDFs by tools/build-mba-catalog.py (rich:
-     rooms, descriptions, syllabus pages).
-   - catalog-portal.json — a read-only snapshot of the portal's
-     "Query courses open this semester", taken by Oskar in his own
-     logged-in browser with tools/portal-scrape.js (wide: ~5,000
-     rows, but only number/seq/title/credits/dept/instructor/time).
+     rooms, descriptions, syllabus pages). Ships with the app.
+   - the portal snapshot — ~5,000 rows of "Query courses open this
+     semester". This one is NOT shipped: it comes from a login-gated
+     portal and is not ours to publish, so every user imports their own
+     with their own login (js/store.js, js/portalImport.js).
      Optional — the tab works without it.
    Rows are merged by course number: an MBA entry absorbs the portal
    row's sequence and remarks; everything else from the portal is
@@ -23,28 +22,59 @@
    ============================================================ */
 let CATALOG = null;               // { entries, mba, portal } once loaded
 let catalogStatus = "idle";       // idle | loading | ok | error
-const catalogFilter = { q:"", scope:"", dept:"", day:0, block:0, fits:false, hideInPlan:false, fixedTime:true };
+const catalogFilter = { q:"", scope:"", dept:"", day:0, block:0, fits:false, hideInPlan:false, fixedTime:true, english:false };
 const CATALOG_FILTER_DEFAULTS = Object.assign({}, catalogFilter);
 const CATALOG_PAGE_SIZES = [10, 25, 50];
 let CATALOG_PAGE = 10;            // rows per page (10 · 25 · 50)
 let catalogPage = 1;
 let catalogTitleLang = "en";      // "en" | "cn" — which title the Course column shows
 
-function ensureCatalog(){
-  if(catalogStatus !== "idle") return;
+/* Load once, lazily, when the tab is first opened. Three sources in
+   order of preference for the portal rows:
+     1. the snapshot the user imported (IndexedDB)  — the normal case
+     2. data/catalog-portal.json                    — dev convenience:
+        404s on the live site, present on Oskar's local server
+   The MBA file always ships with the app, so the tab is never empty.
+   `force` re-reads after an import or a removal. */
+let catalogLoading = null;                // the in-flight load, so callers can await it
+
+function ensureCatalog(force){
+  if(catalogStatus === "loading") return catalogLoading || Promise.resolve();
+  if(catalogStatus !== "idle" && !force) return Promise.resolve();
   catalogStatus = "loading";
   renderCatalog();
   const get = name => fetch("data/"+name).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); });
-  Promise.all([ get("catalog-mba.json"), get("catalog-portal.json").catch(()=>null), get("departments.json").catch(()=>null) ])
+  catalogLoading = Promise.all([
+    get("catalog-mba.json"),
+    portalRows(),
+    get("departments.json").catch(()=>null)
+  ])
     .then(([mba, portal, depts])=>{
       if(!mba || !Array.isArray(mba.courses)) throw new Error("bad file");
-      CATALOG = mergeCatalogSources(mba, portal && Array.isArray(portal.courses) ? portal : null);
+      CATALOG = mergeCatalogSources(mba, portal);
       // Portal department codes ("051 · School of Economics and Management") for the filter.
       CATALOG.deptCodes = new Map(((depts && depts.departments) || []).map(d=>[d.name, d.code]));
       catalogStatus = "ok";
     })
     .catch(()=>{ catalogStatus = "error"; })
-    .then(()=>{ fillCatalogDeptSelect(); renderCatalog(); });
+    .then(()=>{ fillCatalogDeptSelect(); renderCatalog(); catalogLoading = null; });
+  return catalogLoading;
+}
+
+/* The imported snapshot, else the local dev file, else nothing.
+   Shaped like the scraper's file either way: {snapshot, semester, courses}. */
+function portalRows(){
+  return snapshotGet("catalog")
+    .then(rec=>{
+      if(rec && Array.isArray(rec.rows) && rec.rows.length){
+        return { snapshot: rec.snapshot, semester: rec.semester, courses: rec.rows, imported: true, count: rec.count };
+      }
+      return fetch("data/catalog-portal.json")
+        .then(r=> r.ok ? r.json() : null)
+        .then(d=> d && Array.isArray(d.courses) && d.courses.length ? Object.assign({ local:true }, d) : null)
+        .catch(()=>null);
+    })
+    .catch(()=>null);
 }
 
 /* Portal row → catalog entry (slots via the paste parser's block-code reader). */
@@ -70,8 +100,12 @@ function mergeCatalogSources(mba, portal){
   portalRows.forEach(r=>{
     const m = byNumber.get(r.number);
     if(m && portalByNumber.get(r.number).length===1){
-      // Same course in both: keep the rich MBA entry, take the portal's sequence/remarks.
+      // Same course in both: keep the rich MBA entry, take the portal's
+      // sequence, remarks and course features (the MBA file has no features
+      // column, and the portal's wording is the only place the teaching
+      // language is spelled out).
       m.seq = m.seq || r.seq; m.remarks = cleanRemarks(r.remarks); m.inPortal = true;
+      if(!m.features && r.features) m.features = r.features;
       m.key = m.key || r.number;
       return;
     }
@@ -106,17 +140,28 @@ function remarksText(r){
   return String(r||"").replace(/^限[:：]/, "Restricted: ").replace(/^优先[:：]/, "Priority: ");
 }
 
+/* Two rows of the same course number are the same *section* when they meet at
+   the same time — the tie-breaker whenever one side has no sequence (the MBA
+   list carries none, hand-typed courses often neither). No meetings on one
+   side: nothing to tell them apart, so the number decides. */
+function sameSection(entry, c){
+  const es = entry.slots||[], cs = c.slots||[];
+  if(!es.length || !cs.length) return true;
+  return es.some(a => cs.some(b => +a.day===+b.day && a.start===b.start));
+}
+
 /* The plan course that corresponds to a catalog entry, if any: by catalogRef,
-   else by course number — and, for entries that carry a sequence (portal
-   sections), only when the plan course has that same sequence or none. So
+   else by course number — and only when it is the same section. Sequences
+   decide when both sides have one, the meeting time otherwise. So
    "Elementary Chinese B" 64203022-1 … -203 are not all "in plan" because one
-   section is. */
+   section is, and the MBA row (Fri) stays addable after the Wed section was
+   added. */
 function planCourseFor(entry){
   return state.courses.find(c=>{
     if(c.catalogRef && c.catalogRef.key===entry.key) return true;
     if(!c.number || c.number!==entry.number) return false;
-    if(!entry.seq) return true;
-    return !c.seq || String(c.seq)===String(entry.seq);
+    if(entry.seq && c.seq) return String(c.seq)===String(entry.seq);
+    return sameSection(entry, c);
   }) || null;
 }
 
@@ -163,6 +208,7 @@ function catalogMatches(entry){
   else if(f.scope && f.scope!=="mba-all" && entry.program!==f.scope) return false;
   if(f.fixedTime && !(entry.slots||[]).length) return false;
   if(f.dept && entry.dept!==f.dept) return false;
+  if(f.english && !taughtInEnglish(entry)) return false;
   if(f.day && !(entry.slots||[]).some(s=>+s.day===f.day)) return false;
   if(f.block && !(entry.slots||[]).some(s=>+s.block===f.block)) return false;
   if(f.hideInPlan && planCourseFor(entry)) return false;
@@ -173,6 +219,15 @@ function catalogMatches(entry){
     if(!hay.includes(f.q)) return false;
   }
   return true;
+}
+
+/* The portal's "Course features" column is the only language signal there
+   is — there is no language field. "Taught in foreign language" and the
+   bilingual variants are what an exchange student can actually follow;
+   MBA-list courses carry their own `lang`. */
+function taughtInEnglish(entry){
+  if(entry.source === "mba") return !/chinese/i.test(entry.lang||"") || /english/i.test(entry.lang||"");
+  return /foreign language/i.test(entry.features||"");
 }
 
 function weeksRangeText(weeks){ return "weeks "+(weeks||"—"); }
@@ -228,9 +283,8 @@ function renderCatalog(){
     const a1 = el("a", null, "schedule PDF"); a1.href = encodeURI(mba.files.schedule); a1.target = "_blank";
     const a2 = el("a", null, "syllabuses PDF"); a2.href = encodeURI(mba.files.syllabus); a2.target = "_blank";
     meta.appendChild(a1); meta.appendChild(document.createTextNode(" · ")); meta.appendChild(a2); meta.appendChild(document.createTextNode(")"));
-    if(portal) meta.appendChild(document.createTextNode(" · Portal snapshot from "+portal.snapshot+" ("+portal.courses.length+" rows, all departments; no rooms)"));
-    else meta.appendChild(document.createTextNode(" · No portal snapshot yet (data/catalog-portal.json)"));
   }
+  renderCatalogSnapshotBar();
   const dl = $("#catalogDeadlines");
   if(dl && !dl.childElementCount && Array.isArray(mba.deadlines)){
     mba.deadlines.forEach(d=>{
@@ -443,6 +497,61 @@ function renderCatalogDetailsRow(entry){
   return tr;
 }
 
+/* The portal snapshot is imported per user, so the tab has to say where it
+   stands: how many rows, from when — or, when nothing is imported yet, a
+   short invitation that leads straight to the import. */
+function renderCatalogSnapshotBar(){
+  const host = $("#catalogSnapshot"); if(!host) return;
+  host.innerHTML = "";
+  const portal = CATALOG && CATALOG.portal;
+
+  if(portal){
+    const box = el("div","snapbar ok");
+    const txt = el("div","snapbar-text");
+    txt.appendChild(el("b", null, portal.courses.length.toLocaleString("en-US")+" portal courses"));
+    txt.appendChild(document.createTextNode(
+      " · snapshot from "+(portal.snapshot||"?")+
+      (portal.semester ? " · semester "+portal.semester : "")+
+      (portal.local ? " · local dev file" : "")));
+    box.appendChild(txt);
+    const acts = el("div","snapbar-acts");
+    const upd = el("button","btn ghost small","Update…"); upd.type = "button";
+    upd.addEventListener("click", ()=>openPortalImport("catalog"));
+    acts.appendChild(upd);
+    if(!portal.local){
+      const rm = el("button","linkbtn","Remove"); rm.type = "button";
+      rm.title = "Delete the imported catalog from this browser. Your plan is not touched.";
+      rm.addEventListener("click", removeCatalogSnapshot);
+      acts.appendChild(rm);
+    }
+    box.appendChild(acts);
+    host.appendChild(box);
+    return;
+  }
+
+  // Nothing imported: this is the main entry point into the whole feature,
+  // so it explains the why in one line and offers one obvious button.
+  const box = el("div","snapbar empty");
+  const txt = el("div","snapbar-text");
+  txt.appendChild(el("b", null, "Only the 15 MBA courses are listed."));
+  txt.appendChild(document.createTextNode(
+    " Add all ~5,000 courses of this semester by importing them once from the Info portal — "+
+    "they stay in your browser, nothing is uploaded."));
+  box.appendChild(txt);
+  const b = el("button","btn import-btn","📚 Import the course catalog"); b.type = "button";
+  b.addEventListener("click", ()=>openPortalImport("catalog"));
+  box.appendChild(b);
+  host.appendChild(box);
+}
+
+function removeCatalogSnapshot(){
+  snapshotClear("catalog").then(()=>{
+    CATALOG = null; catalogStatus = "idle";
+    ensureCatalog(true);
+    toast("Course catalog removed — your plan is unchanged");
+  });
+}
+
 function wireCatalogControls(){
   const q = $("#catalogSearch"); if(!q) return;
   const upd = ()=>{ catalogPage = 1; catalogOpenKey = null; renderCatalog(); };
@@ -460,6 +569,7 @@ function wireCatalogControls(){
     Object.assign(catalogFilter, CATALOG_FILTER_DEFAULTS);
     q.value = ""; $("#catalogScope").value = ""; $("#catalogDept").value = ""; $("#catalogDay").value = "0"; $("#catalogBlock").value = "0";
     $("#catalogFits").checked = false; $("#catalogHideInPlan").checked = false; $("#catalogFixedTime").checked = true;
+    $("#catalogEnglish").checked = false;
     upd();
   });
   $("#catalogDept").addEventListener("change", e=>{ catalogFilter.dept = e.target.value; upd(); });
@@ -467,4 +577,5 @@ function wireCatalogControls(){
   $("#catalogBlock").addEventListener("change", e=>{ catalogFilter.block = +e.target.value; upd(); });
   $("#catalogFits").addEventListener("change", e=>{ catalogFilter.fits = e.target.checked; upd(); });
   $("#catalogHideInPlan").addEventListener("change", e=>{ catalogFilter.hideInPlan = e.target.checked; upd(); });
+  $("#catalogEnglish").addEventListener("change", e=>{ catalogFilter.english = e.target.checked; upd(); });
 }

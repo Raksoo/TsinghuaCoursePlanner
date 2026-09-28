@@ -1,0 +1,153 @@
+<html><!--<!DOCTYPE HTML>--><head>
+
+<meta http-equiv="X-UA-Compatible" content="IE=5">
+<title>Course registration system for visiting students</title>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+<meta http-equiv="Expires" content="0">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta http-equiv="Pragma" content="no-cache">
+<link type="text/css" href="styles/gbp/theme/blue/menu.css" rel="stylesheet">
+<link type="text/css" href="styles/gbp/datepicker.css" rel="StyleSheet">
+<link type="text/css" href="styles/zhjw/grid.css" rel="stylesheet">
+<link type="text/css" href="styles/zhjw/css.css" rel="stylesheet">
+<link type="text/css" href="styles/zhjw/default.css" rel="stylesheet">
+<link type="text/css" href="styles/zhjw/common.css" rel="stylesheet">
+<link type="text/css" href="styles/zhjw/topmenu.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="/components/jquery-easyui-1.3.4/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css" href="/components/jquery-easyui-1.3.4/themes/icon.css">
+<link rel="stylesheet" type="text/css" href="../demo.css">
+<script type="text/javascript" src="/components/jquery-easyui/jquery.min.js"></script><style type="text/css"></style>
+<script type="text/javascript" src="/components/jquery-easyui-1.3.4/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="/components/jquery-easyui-1.3.4/jquery.validatebox.fixed.js"></script>
+<script type="text/javascript" src="/components/jquery-easyui-1.3.4/locale/easyui-lang-zh_CN.js" charset="utf-8"></script>
+<script type="text/javascript" src="/components/ckeditor/ckeditor.js"></script>
+<script type="text/javascript" src="scripts/grid.js"></script>
+<script type="text/javascript" src="scripts/prototype.js"></script>
+<script type="text/javascript" src="scripts/gbp/page.js"></script>
+<script type="text/javascript" src="scripts/gbp/selectlist.js"></script>
+<script type="text/javascript" src="scripts/gbp/validation.js"></script>
+<script type="text/javascript" src="scripts/gbp/datepicker.js"></script>
+<script type="text/javascript" src="scripts/gbp/menu.js"></script>
+<script type="text/javascript" src="scripts/validator.jsp"></script>
+<script type="text/javascript" src="scripts/zhjw/pubFunction.js"></script>
+<!-- <script type="text/javascript" src="/components/jquery-easyui-1.3.4/jquery.MultiFile.js"></script> -->
+<script type="text/javascript" src="/components/jquery-easyui-1.3.4/ajaxfileupload.js"></script>
+<style type="text/css">
+	.text_alert {color: gray;}
+	.table1{background:#000000;}
+	/* 这边定义了表格的背景，也就是边框的颜色 */
+	.table1 td {background:#FFFFFF} 
+	.table1 th {background:#FFFFFF; border-right-style:none; border-left-style: none;  border-top-style: none;}
+	/* 这边定义了表格内的单元格背景是白色啦，就细线就这样出现啦 */
+</style>
+
+</head>
+
+<body class="infoBody">
+<div id="isShow" style="display: block;"><div class="dqwz" id="pathTd"></div></div>
+<div class="window_side" id="pathTd">
+  	<div class="window_title_yuan" id="window_title">
+    	<div id="SubComtent" class="window_title_left">Visiting student course registration</div>
+    	<div class="window_titleleft_yuan">&nbsp;</div>
+  	</div>
+	<div class="window_neirong" id="">
+<script>
+function initTopLocal(){
+   //initTop("image","images/zhjw/text.png","本科生选课系统");
+   //initTop("text","","本科生选课系统");
+   //initTopPart("text","本科生选课系统");
+      //showPath("&nbsp;&nbsp;<span class='copyright_zi_hui_b_shadow'>您当前的位置：</span>&nbsp;进修生选课");
+       
+      initTopPart("text","Visiting student course registration");
+   //是否显示路径
+   isShowPath(true);
+   
+}
+</script>
+<script>
+
+window.document.title = "Course registration system for visiting students";
+function setInitValue(){
+   initTopLocal();
+}
+Event.observe(window, "load", setInitValue, false);
+</script>
+<table width="100%" border="0" cellpadding="0" cellspacing="1" bgcolor="#FFFFFF" class="table_title_zi25">
+                                  <tbody><tr>
+                                    <td><table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                        <tbody><tr>
+                                          <td width="17%" height="25" class="copyright_zi_hui_b_shadow">Course information</td>
+                                        </tr>
+                                    </tbody></table></td>
+                                  </tr>
+</tbody></table>
+                      <table width="100%" border="0" cellpadding="0" cellspacing="1" bgcolor="#CCCCCC">
+                                  <tbody>
+                                    <tr>
+                                      <td width="12%" height="25" align="center" valign="center" bgcolor="#DFDFDF" class="copyright">Course number</td>
+                                      <td width="22%" align="left" bgcolor="#F2F2F2" class="hui">80511412</td>
+                                      <td width="22%" align="center" bgcolor="#DFDFDF" class="copyright">Course sequence</td>
+                                      <td width="53%" align="left" bgcolor="#F2F2F2" class="hui">0</td>
+                                    </tr>
+                                    <tr>
+                                      <td width="12%" height="25" align="center" valign="center" bgcolor="#DFDFDF" class="copyright">Course title</td>
+                                      <td width="22%" align="left" bgcolor="#F2F2F2" class="hui">Technology and Strategy</td>
+                                      <td width="22%" align="center" bgcolor="#DFDFDF" class="copyright">Course department/school/college</td>
+                                      <td width="53%" align="left" bgcolor="#F2F2F2" class="hui">
+                                         School of Economics and Management                                       
+                                                                            </td>
+                                    </tr>
+                                    <tr>
+                                      <td width="12%" height="25" align="center" valign="center" bgcolor="#DFDFDF" class="copyright">Instructor name</td>
+                                      <td width="22%" align="left" bgcolor="#F2F2F2" class="hui"></td>
+                                      <td width="22%" align="center" bgcolor="#DFDFDF" class="copyright">Credit hours</td>
+                                      <td width="53%" align="left" bgcolor="#F2F2F2" class="hui">32</td>
+                                    </tr>
+                                    <tr>
+                                      <td width="12%" height="25" align="center" valign="center" bgcolor="#DFDFDF" class="copyright">Credit</td>
+                                      <td width="22%" align="left" bgcolor="#F2F2F2" class="hui">2</td>
+                                      <td width="22%" align="center" bgcolor="#DFDFDF" class="copyright">Testing methods</td>
+                                      <td width="53%" align="left" bgcolor="#F2F2F2" class="hui">
+                                                                              	</td>
+                                    </tr>
+                                    <tr>
+                                      <td width="12%" height="25" align="center" valign="center" bgcolor="#DFDFDF" class="copyright">Textbooks</td>
+                                      <td width="53%" align="left" colspan="3" bgcolor="#F2F2F2" class="hui">Melissa A. Schilling, Strategic Management of Technological Innovation, 4th ed, McGraw-Hill, 2013.</td>
+                                    </tr>
+                                    <tr>
+                                      <td width="12%" height="25" align="center" valign="center" bgcolor="#DFDFDF" class="copyright">Reference books</td>
+                                      <td width="53%" align="left" colspan="3" bgcolor="#F2F2F2" class="hui">Scott Shane，Technology Strategy for Managers and Entrepreneurs,  Pearson/Prentice Hall, 2009</td>
+                                    </tr>
+									
+                                    <tr>
+                                      <td width="12%" height="25" align="center" valign="center" bgcolor="#DFDFDF" class="copyright">Chinese description</td>
+                                      <td width="53%" align="left" colspan="3" bgcolor="#F2F2F2" class="hui">技术密集型产业的竞争，包括：技术和竞争优势，技术杠杆，差距分析法；创造价值：技术和市场变化的模式，包括：S曲线和主导设计，市场的进化；获取价值：理解竞争，包括：独占性和价值获得，标准驱动的市场竞争；传递价值：组织竞争力；技术战略设计和实施。</td>
+                                    </tr>
+                                     
+                                     <tr>
+                                      <td width="12%" height="25" align="center" valign="center" bgcolor="#DFDFDF" class="copyright">English description</td>
+                                      <td width="53%" align="left" colspan="3" bgcolor="#F2F2F2" class="hui">Analyze the technologies strategies of leading firms, and the relationships between technologies strategies, competitive strategies, and firm growth; answer how a firm could become a technology leader, how to nurture autonomous innovation and induced innovation, how to deal with open innovation. </td>
+                                    </tr>
+                                     <tr>
+                                       <td height="25" align="center" valign="center" bgcolor="#DFDFDF" class="copyright">Course features</td>
+                                       <td align="left" colspan="3" bgcolor="#F2F2F2" class="hui">01</td>
+                                     </tr>
+									
+                                  </tbody>
+                                </table>
+                                  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="shadow">
+                                    <tbody><tr>
+                                      <td width="100%" height="4"><img src="img/spacer.gif" width="1" height="1"></td>
+                                    </tr>
+                                  </tbody></table>
+
+	</div>
+</div>
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+	<tbody><tr> 
+		<td height="30" align="center" bgcolor="#eabdf4" class="copyright_shadow">
+		©Copyright: Office of Academic Affairs, Graduate School, Registration Center, Tsinghua University. Technical support<a href="http://www.itc.tsinghua.edu.cn" target="_blank">Information Technology Center, Tsinghua University</a>
+		</td>
+	</tr>
+</tbody></table>
+</body></html>

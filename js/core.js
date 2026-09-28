@@ -39,6 +39,10 @@ const STATUS = [
 ];
 const WEEK1_MONDAY = new Date(2026, 8, 14);   // September 14, 2026
 const TOTAL_WEEKS = 18;
+/* Which semester every week number in this app refers to. The portal
+   stamps its pages with the same code (p_xnxq), so an import can check
+   that it is not silently filing another term's courses into these weeks. */
+const SEMESTER = "2026-2027-1";
 const STORE_KEY = "tsinghua-planner-v1";
 
 /* Starting courses: current selection from the elective list / MBA schedule */

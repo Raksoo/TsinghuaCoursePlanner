@@ -83,18 +83,21 @@ function fillForm(c){
   $("#slotRows").innerHTML = "";
   if(c && c.slots && c.slots.length) c.slots.forEach(addSlotRow);
   else addSlotRow();
-  $("#formTitle").textContent = c ? "Edit course" : "Add a course manually";
+  $("#formTitle").textContent = c ? "Edit course" : "Add a course";
   $("#deleteCourse").style.display = c ? "inline-block" : "none";
   const resetBtn = $("#resetForm");
   if(resetBtn){
     resetBtn.textContent = c ? "Cancel edit" : "Clear form";
     resetBtn.title = c ? "Stop editing and empty the form (the saved course is not changed)" : "Empty all fields";
   }
+  renderCourseDetail(c);
   const lead = $("#formLead");
   if(lead){
     lead.textContent = c
       ? "Editing “"+(c.titleEn||c.titleCn||"this course")+"”. Change anything below, then Save course — or Delete course to remove it."
-      : "Enter a course by hand. Only a title, its credits, and one meeting time are required; everything else is optional. Already have one? Click any course under My courses to edit it here — or use the buttons on the right to import.";
+      : "The quickest way is to let the portal fill this in for you — see the buttons on the right. "
+        + "Typing a course by hand still works and is below; only a title, its credits and one meeting time are required. "
+        + "Already have a course? Click its row under My courses to edit it here.";
   }
 }
 
@@ -238,4 +241,39 @@ function renderPreview(){
   acts.appendChild(el("span","hint","New courses come in as “Option” — visible on the calendar, clearly apart from booked ones."));
   note.appendChild(acts);
   host.appendChild(note);
+}
+
+
+/* The portal's own course description, when a timetable import brought one
+   along (course.detail, see js/scheduleImport.js). Read-only: it is the
+   portal's text, not a field to edit, and a course without it shows nothing
+   at all rather than an empty box. */
+function renderCourseDetail(c){
+  const host = $("#courseDetailHost"); if(!host) return;
+  host.innerHTML = "";
+  const d = c && c.detail;
+  if(!d) return;
+
+  const box = el("details","course-detail");
+  box.appendChild(el("summary", null, "Course description from the Info portal"));
+  const text = d.descriptionEn || d.descriptionCn;
+  if(text) box.appendChild(el("p", null, text));
+  if(d.descriptionEn && d.descriptionCn){
+    const cn = el("details","course-detail");
+    cn.appendChild(el("summary", null, "\u4e2d\u6587"));
+    cn.appendChild(el("p", null, d.descriptionCn));
+    box.appendChild(cn);
+  }
+  const dl = el("dl");
+  const fact = (k, v)=>{ if(!v && v !== 0) return; dl.appendChild(el("dt", null, k)); dl.appendChild(el("dd", null, String(v))); };
+  fact("Credit hours", d.creditHours);
+  fact("Examination", d.testing);
+  fact("Textbooks", d.textbooks);
+  fact("Reference books", d.references);
+  // A bare code ("01") says nothing to a reader — only show words.
+  const features = d.featuresLabel || (/^\d+$/.test(String(d.features||"")) ? "" : d.features);
+  fact("Course features", features);
+  if(dl.childElementCount) box.appendChild(dl);
+  if(d.fetchedAt) box.appendChild(el("p","hint", "Read from the portal on " + d.fetchedAt + "."));
+  host.appendChild(box);
 }

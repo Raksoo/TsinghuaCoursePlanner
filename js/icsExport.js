@@ -127,7 +127,10 @@ function buildICS(opts){
     lines.push("DTSTART:"+fmtICSDate(dtStart));
     lines.push("DTEND:"+fmtICSDate(dtEnd));
     lines.push(foldICSLine("SUMMARY:"+summary));
-    if(c.room) lines.push(foldICSLine("LOCATION:"+icsEscape(c.room)));
+    // A course can change room between its meetings, so the slot's own room
+    // wins when the timetable import set one (js/scheduleImport.js).
+    const room = (r.slot && r.slot.room) || c.room;
+    if(room) lines.push(foldICSLine("LOCATION:"+icsEscape(room)));
     if(descParts.length) lines.push(foldICSLine("DESCRIPTION:"+icsEscape(descParts.join(" · "))));
     lines.push(foldICSLine("CATEGORIES:"+icsEscape(statusLabel(c.status))));
     if(opts.travelMin > 0){

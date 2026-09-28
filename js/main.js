@@ -26,6 +26,12 @@ function renderAll(){
 }
 
 function init(){
+  /* Naming this window lets the portal scrapers target an already-open
+     planner tab (window.open(url, "thu-planner")) instead of stacking up a
+     new one on every run. Browsers may refuse the cross-origin lookup; then
+     a new tab opens, which is the old behaviour. */
+  try{ if(!window.name) window.name = "thu-planner"; }catch(e){}
+
   load();
   importFromHash();
 
@@ -102,6 +108,12 @@ function init(){
   }
   wireHelpImg("#pasteHelpImg", "#pasteHelpPlaceholder");
   wireHelpImg("#xlsHelpImg", "#xlsHelpPlaceholder");
+
+  wirePortalImport();
+  $("#openScheduleImportBtn").addEventListener("click", ()=>openPortalImport("schedule"));
+  $("#openCatalogFromAddBtn").addEventListener("click", ()=>showPanel("catalog"));
+  $("#portalScheduleBtn").addEventListener("click", ()=>openPortalImport("schedule"));
+  $("#portalCatalogBtn").addEventListener("click", ()=>openPortalImport("catalog"));
 
   $("#openPasteBtn").addEventListener("click", openPasteModal);
   $("#pasteModalClose").addEventListener("click", closePasteModal);
@@ -261,6 +273,7 @@ function init(){
     if(!$("#moveModalOverlay").hidden) closeMoveModal();
     if(!$("#pasteModalOverlay").hidden) closePasteModal();
     if(!$("#xlsModalOverlay").hidden) closeXlsModal();
+    if(!$("#portalModalOverlay").hidden) closePortalImport();
     // Help modal is deliberately excluded — only "Got it" closes it.
     const si = $("#statusInfo");
     if(si && !si.hidden){ si.hidden = true; $("#statusInfoBtn").setAttribute("aria-expanded","false"); }
