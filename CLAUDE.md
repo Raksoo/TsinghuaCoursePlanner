@@ -25,12 +25,14 @@ warnings, personal non-course events, exam-date management, drag & drop of
 events. Also rejected: a Learning-Agreement tracker (the existing credit-goal
 bar stays as is). Judge new ideas by "does it remove planning work?".
 
-**Roadmap lives in [PLANNING.md](PLANNING.md)** — Ausbaustufe 3: catalog
-import per user ✅ → schedule scraper ✅ → schedule import into the plan (next)
-→ course details → Add-tab rebuild → bookmarklet polish → tests → alternative
-sections → mobile. The old roadmap (phases 1–6 of Ausbaustufe 2) is at
-`_Archive/PLANNING-v1-2026-09-22.md`. Read PLANNING.md before starting any
-feature.
+**The roadmap is finished (2026-09-28).** Ausbaustufe 3 — catalog import per
+user, schedule scraper, schedule import, course details, Add-tab rebuild,
+bookmarklet, test suite — is built; see "What is still open" at the end of this
+file for the rest. The two planning documents are archived (untracked, and in
+the git history): `_Archive/PLANNING-v2-2026-09-28.md` (Ausbaustufe 3, with the
+reasoning behind every phase and the full portal-source survey) and
+`_Archive/PLANNING-v1-2026-09-22.md` (Ausbaustufe 2). Read the v2 file before
+reopening anything portal-related — the rules that outlived it are below.
 
 **Portal data is never committed (decided 2026-09-28).** The Info portal is
 login-gated; republishing its catalog in a public repo is not our call to
@@ -81,6 +83,29 @@ with no charset of its own inherits the *document's* encoding, so any non-ASCII
 byte becomes mojibake and a mangled character in a regex literal is a silent
 SyntaxError. Keep those files pure ASCII (`\uXXXX` escapes); `npm test` enforces it.
 
+**Nothing is imported without a preview.** Every route in (timetable,
+catalog, course details, JSON, `.xls`, paste, `postMessage`, share link) shows
+what it found and writes only after a click. No import path may write straight
+into the plan, however trustworthy the source looks.
+
+**Scraper ethics.** Read only, only the user's own account, throttled
+(≥ 800 ms between requests), resumable, and no personal data beyond the
+publicly listed instructor names — instructor IDs (`p_jsh`) are dropped. The
+app never queries the portal live; it works on snapshots the user imported.
+
+**Only fetch URLs the portal itself links.** The course-detail pages are
+reached through the `href` values the timetable page ships. Guessing URL
+parameters to reach pages the portal does not link is not an option — neither
+technically reliable nor ours to do.
+
+**One parser, two callers.** The app and `tools/portal-*.js` share
+`parseSchedulePage` and `parseCourseDetail` from `js/scheduleParse.js`. Never
+write a second parser for the same page; the scraper loads this one over a
+`<script src>`.
+
+**File size.** Modules stay under ~400 lines. `catalog.js` (470) is due to be
+split (`catalogData.js` / `catalogView.js`) the next time it is touched.
+
 **Cache busting:** every `<script src>`/stylesheet in `index.html` carries
 `?v=<date+letter>`. Bump it in one go (search-replace) on every deploy that
 changes JS/CSS — GitHub Pages caches assets ~10 min and a half-updated mix
@@ -98,7 +123,7 @@ of old `main.js` + new HTML throws `ReferenceError`s on load.
   dependency order. Edits should touch one small module, not a monolith.
 - **Portal catalog = offline snapshot, never a live crawler.** The course
   portal (`zhjwe.cic.tsinghua.edu.cn`) is login-gated and CORS-blocked; the
-  app is static. See PLANNING.md phase 5 and `_Archive/Feature_Crawler/`
+  app is static. See `_Archive/PLANNING-v2-2026-09-28.md` §1 and `_Archive/Feature_Crawler/`
   (untracked; screenshot + HTML dump of the portal).
 
 ## Repo structure
@@ -106,7 +131,6 @@ of old `main.js` + new HTML throws `ReferenceError`s on load.
 ```
 index.html       Page skeleton, 5 tab panels (week, list, catalog, add, data), all modals
 styles.css       All styles incl. print-only layout and the few mobile breakpoints
-PLANNING.md      Roadmap + backlog for the next feature rounds (read before building)
 data/
   holidays.json      University holidays (one entry per date), curated from the academic calendar
   catalog-mba.json   MBA exchange-list catalog (15 courses + add/drop deadlines), generated
@@ -329,8 +353,8 @@ visit (only "Got it" closes it).
   Pre-intermediate and Intermediate Chinese. Both are in the catalog notes.
 - Mobile (375 px, checked 2026-09-22): usable but not designed for it —
   header takes ~40 % of the screen, tabs wrap, week grid scrolls sideways,
-  course table is 1320 px wide. Mobile work is PLANNING.md phase 6 and must
-  leave desktop pixel-identical.
+  course table is 1320 px wide. Mobile is the one unbuilt round (see below) and
+  must leave desktop pixel-identical.
 - `fetch()` of local files fails on `file://` in Chrome — serve the folder
   (`python3 -m http.server 8000`) when the catalog JSON lands.
 
@@ -348,4 +372,60 @@ snapshot store, catalog merge, plan reconciliation, .ics format and folding,
 timezone safety, week display, paste parser, export/import round-trip,
 storage compatibility, form field carry-over). Beyond that, testing is still ad hoc: drive the
 live/local page with the Claude browser tools (DOM state, `buildICS()` via
-page.evaluate, PDF render for print). A Playwright E2E suite is PLANNING.md §9.3.
+page.evaluate, PDF render for print). A Playwright E2E suite is still unwritten
+(three journeys were sketched in the archived plan, §9.3).
+
+## What is still open
+
+The roadmap is done; this is everything that was deliberately left, so it does
+not have to be re-derived from the archived plan.
+
+**One unbuilt round: mobile.** Findings above (375 px, 2026-09-22). Desktop
+must stay pixel-identical. The untested iOS share-sheet path of the `.ics`
+export belongs to the same round — it can only be checked on a real iPhone.
+
+**Verifications nobody could run yet.**
+- The bookmarklet has never run on the live portal: whether Safari counts the
+  click as a user gesture, and whether the portal sends a CSP that blocks the
+  injected `<script src>`, is only answerable there. Both fallbacks (console
+  snippet, file download) exist for exactly that reason.
+- **The portal's catalog page disappeared on 2026-09-28** — "Query courses
+  open this semester" was there in the morning and gone in the evening, most
+  likely switched off with the registration deadline. So the *catalog* scraper
+  cannot be tested against the real portal right now; the local snapshot
+  (5,031 rows) and the dumps under `_Archive/` are the test basis. Check
+  whether the page answers again before touching that scraper. The timetable
+  scraper is unaffected as long as "My timetable" stays reachable.
+- `tests/import.test.mjs` was planned and never written: the `postMessage`
+  receiver's origin allowlist (`js/portalImport.js`) is coded but not
+  unit-tested.
+
+**Dropped on purpose: "alternative sections"** (suggest a clash-free sequence
+of the same course, with a Swap button). The archived plan justified it with
+"427 course numbers have several sequences", but the snapshot says only **16
+courses have two or more English-taught sections at different times**, two of
+them at SEM — and a Swap button would assert something the app cannot know:
+that the user is allowed to take that section. Sections of one number can even
+differ in teaching language (Physics-1: seq 1 English, seq 3 Chinese). If it
+ever comes back, then as a grey line inside the expanded catalog row ("also as
+sequence 2 · Thu 19:20 · LI Wei") — information, no button, no suggestion.
+
+**Backlog, unplanned but noted.**
+- *Course level (undergrad / grad / MBA) in the catalog.* Apparently the first
+  digit of the course number; Oskar still has to supply the ranges — do not
+  build before that. Then small: `courseLevel(number)`, a badge in the title
+  column, a filter chip. The portal's own search form has no level field (checked
+  against the dump); the number is the only signal.
+- *`showToXs`* — every catalog row links its Chinese title to
+  `js.vjsKcbBs.do?m=showToXs&p_id=<instructor id>;<number>`. Unchecked. If that
+  page carried the same descriptions as `showKcDetail`, course descriptions
+  would be reachable for the whole catalog instead of only one's own courses.
+  Next step is a dump of one such page, not a plan.
+- *Exam arrangement* (`jxmh.do?m=jxs_ksSearch`) — a fourth portal source with
+  exam dates. Held back on purpose: exam management was ruled calendar
+  territory. If ever, then as a read-only fact in the course detail.
+- *"Check enrollment status"* (`xsJxs.xsJxsXjb.do?m=show`) — unchecked; might
+  tell `bid` from `booked` automatically.
+- *`data/buildings.json`* — a glossary of the handful of buildings, so a room
+  can read "Jianhua A201 (建华/经管新楼A201)".
+- Course list: sortable room column, filter "has a room".

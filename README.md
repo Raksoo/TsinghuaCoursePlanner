@@ -8,7 +8,6 @@ No backend, no login — everything is saved in your browser's local storage.
 ```
 index.html       Page skeleton, the five tab panels, all modals
 styles.css       All styles incl. print-only layout
-PLANNING.md      Roadmap for upcoming feature rounds
 CLAUDE.md        Project context / handoff notes for AI-assisted work
 assets/          Help screenshots, sample .xls, MBA schedule + syllabus PDFs, academic calendar
 data/            holidays.json (week view), catalog-mba.json and optional catalog-portal.json (Catalog tab)

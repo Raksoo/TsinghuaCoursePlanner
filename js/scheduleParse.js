@@ -3,7 +3,7 @@
 /* ============================================================
    Reads the Tsinghua Info portal's "My timetable" page.
 
-   ONE parser, two callers (see PLANNING.md section 12):
+   ONE parser, two callers (see CLAUDE.md, "One parser, two callers"):
    - tools/portal-schedule-scrape.js loads this file into the portal
      page and runs it against that page's live `document`;
    - the app runs it against a `document` built from pasted page

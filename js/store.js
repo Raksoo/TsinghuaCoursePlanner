@@ -17,7 +17,7 @@
    full catalog can never damage a plan.
 
    Why the catalog is not simply shipped with the app: it comes from a
-   login-gated portal and is not ours to publish (PLANNING.md, top).
+   login-gated portal and is not ours to publish (CLAUDE.md, top).
    Everyone imports their own with their own login.
 
    Every function resolves rather than throws: IndexedDB can be missing
@@ -61,7 +61,8 @@ function snapshotTx(mode, run){
   }).catch(()=>null);
 }
 
-/* One record per source; "catalog" today, "details" later (PLANNING §6).
+/* One record per source; "catalog" is the only one — course details live on
+   the course in the plan, not here.
    Stored as the object it is — structured clone, so reading it back costs
    no JSON.parse of 1.7 MB. */
 function snapshotGet(id){ return snapshotTx("readonly", s=>s.get(id)).then(r=>r||null); }
