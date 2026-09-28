@@ -126,13 +126,19 @@ h2{font-size:17px;font-weight:640;letter-spacing:-0.01em;margin:0 0 4px}
 #panel-week .bar #weekSel{height:38px}
 #panel-week .bar .viewtoggle .vt{display:inline-flex;align-items:center}
 #panel-week .bar .filters{min-height:38px;align-items:center}
-select,input[type=text],input[type=number],input[type=time],textarea{
+select,input[type=text],input[type=number],input[type=time],input[type=search],textarea{
   background:#fff;border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;min-width:120px;
 }
+/* A search field is drawn by the OS unless told otherwise: on macOS a
+   rounded pill that squares off and shifts the moment it takes focus. Opt
+   out so it is the same box as every other field in the app — the type
+   stays `search` for what it is worth (Escape clears it). */
+input[type=search]{-webkit-appearance:none;appearance:none}
+input[type=search]::-webkit-search-decoration{-webkit-appearance:none}
 /* input[type=time] renders taller than select/text inputs in some browsers
    even with identical padding (native AM/PM chrome) — pin all non-textarea
    controls to the same height so rows with mixed control types stay aligned. */
-select,input[type=text],input[type=number],input[type=time]{height:38px}
+select,input[type=text],input[type=number],input[type=time],input[type=search]{height:38px}
 select:focus,input:focus,textarea:focus{outline:2px solid var(--purple-mid);outline-offset:0;border-color:var(--purple-mid)}
 textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.6}
 
