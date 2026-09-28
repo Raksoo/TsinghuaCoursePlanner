@@ -22,7 +22,12 @@
    you get from the Info portal. Opening a zhjwe link cold therefore fails;
    you have to sign in at info.tsinghua.edu.cn first, and only then does the
    direct link work. That is why step 1 below is the login, not the page. */
-const PORTAL_ORIGIN = "http://zhjwe.cic.tsinghua.edu.cn";       // for the postMessage check
+/* For the postMessage check. The portal is reached over http today, but a
+   campus redirect or HSTS can land the student on https — and an origin
+   check against one spelling would then drop progress, payload and the
+   ready handshake without a word, leaving the dialog waiting forever. */
+const PORTAL_ORIGINS = ["http://zhjwe.cic.tsinghua.edu.cn", "https://zhjwe.cic.tsinghua.edu.cn"];
+function isPortalOrigin(origin){ return PORTAL_ORIGINS.indexOf(origin) !== -1; }
 const PORTAL_LOGIN = "https://info.tsinghua.edu.cn/f/info/gxfw_fg/common/index";
 const PORTAL_SCHEDULE_URL = "http://zhjwe.cic.tsinghua.edu.cn/xkJxs.vxkJxsXkbBs.do?url=/xkJxs.vxkJxsXkbBs.do&m=kbSearchforPortal";
 /* The course registration system's own entry page. It is a frameset: the
@@ -362,11 +367,17 @@ function renderPortalPending(){
   if(!p) return;
 
   if(p.what === "catalog"){
-    const n = el("div","note ok");
-    n.appendChild(el("h3", null, "Ready to import"));
+    // The timetable import refuses a foreign term outright. A catalog is
+    // less dangerous - it only feeds search and clash hints - but planning
+    // against another term's times is just as wrong, so say it plainly.
+    const wrongTerm = p.record.semester && p.record.semester !== SEMESTER;
+    const n = el("div", wrongTerm ? "note warn" : "note ok");
+    n.appendChild(el("h3", null, wrongTerm ? "This snapshot is from another semester" : "Ready to import"));
     const ul = el("ul");
     ul.appendChild(el("li", null, p.record.count.toLocaleString("en-US") + " courses"));
-    if(p.record.semester) ul.appendChild(el("li", null, "Semester " + p.record.semester));
+    if(wrongTerm) ul.appendChild(el("li", null, "Semester " + p.record.semester + " - the planner is set to "
+      + SEMESTER + ", so times, weeks and clash hints would not match your plan."));
+    else if(p.record.semester) ul.appendChild(el("li", null, "Semester " + p.record.semester));
     ul.appendChild(el("li", null, "Snapshot taken " + p.record.snapshot));
     const existing = CATALOG && CATALOG.portal;
     if(existing) ul.appendChild(el("li", null, "Replaces the current snapshot (" + existing.courses.length.toLocaleString("en-US") + " courses from " + existing.snapshot + ")"));
@@ -415,7 +426,7 @@ function wirePortalImport(){
 
   window.addEventListener("message", e=>{
     // Only the portal may talk to us, and only in the shapes we know.
-    if(e.origin !== PORTAL_ORIGIN) return;
+    if(!isPortalOrigin(e.origin)) return;
     const d = e.data;
     if(!d) return;
 
@@ -439,7 +450,9 @@ function wirePortalImport(){
     openPortalImport(m[1]);
     renderPortalProgress({ text: "Waiting for the portal tab\u2026" });
     startPortalWaitTimeout();
-    try{ window.opener.postMessage({ kind:"thu-ready" }, PORTAL_ORIGIN); }catch(err){}
+    // Posting to the wrong spelling is simply dropped by the browser, so
+    // offering both is safe: exactly one of them reaches the portal tab.
+    PORTAL_ORIGINS.forEach(o=>{ try{ window.opener.postMessage({ kind:"thu-ready" }, o); }catch(err){} });
     history.replaceState(null, "", location.pathname + location.hash);
   }
 }
@@ -490,7 +503,7 @@ function renderPortalProgress(d){
 }
 
 function cancelPortalScrape(){
-  try{ if(window.opener) window.opener.postMessage({ kind:"thu-cancel" }, PORTAL_ORIGIN); }catch(e){}
+  if(window.opener) PORTAL_ORIGINS.forEach(o=>{ try{ window.opener.postMessage({ kind:"thu-cancel" }, o); }catch(e){} });
   clearPortalWait();
   const host = $("#portalPending"); if(!host) return;
   host.innerHTML = "";

@@ -152,13 +152,16 @@ function renderGrid(){
       node.style.height = Math.max((ev.e-ev.s)*PPM - 4, 26)+"px";
       node.appendChild(el("span","t", c.titleEn || c.titleCn));
       node.appendChild(el("span","m", ev.start+"–"+ev.end));
-      if(c.room) node.appendChild(el("span","m", c.room));
+      // Max-load view shows every week at once and adds the "Weeks" line — the room
+      // is the least useful line there and a 95-min box cannot hold both.
+      if(c.room && week!=="all") node.appendChild(el("span","m", c.room));
       node.appendChild(el("span","m", c.credits+" CP"));
       if(week==="all") node.appendChild(el("span","m wk", "Weeks "+(ev.weeksText||"—")));
       if(ov) node.appendChild(el("span","badge "+(ov.movedTo?"mv":"hol"), overrideBadge(ov)));
       else if(hol) node.appendChild(el("span","badge hol", "Holiday — no class"));
       // Tooltip: what a click does (the card already shows the details).
-      let tip = "Click to edit this course";
+      // Title is clamped to two lines in the grid, so keep the full one here.
+      let tip = (c.titleEn || c.titleCn) + "\nClick to edit this course";
       if(ov) tip = "This meeting: "+(ov.movedTo ? "moved to "+fmtISO(ov.movedTo)+(ov.start?" "+ov.start+"–"+ov.end:"") : "cancelled")+(ov.note?" — "+ov.note:"")+"\n"+tip;
       else if(hol) tip = hol+" — no classes\n"+tip;
       node.title = tip;
@@ -207,7 +210,7 @@ function renderClashes(){
   const ul = el("ul");
   clashes.forEach(c=>{
     const li = el("li");
-    const wk = c.weeks.length>3 ? ("weeks "+c.weeks[0]+"–"+c.weeks[c.weeks.length-1]) : ("week "+c.weeks.join(", "));
+    const wk = weeksLabel(c.weeks);
     li.textContent = (c.a.titleEn||c.a.titleCn)+" ↔ "+(c.b.titleEn||c.b.titleCn)+" · "+DAYS[c.day-1]+" "+c.range+" · "+wk;
     ul.appendChild(li);
   });

@@ -136,7 +136,10 @@ function courseFacts(c){
     // Credits and instructor describe the course, not one meeting: they ride
     // along on the first line rather than claiming a row of their own.
     if(i === 0){
+      // No credits means the catalog did not know this course. Saying so
+      // beats a silent 0 that quietly drags the credit counter down.
       if(c.credits) line.appendChild(el("span","fact-cp", c.credits + " CP"));
+      else line.appendChild(el("span","fact-cp", "CP?"));
       if(c.instructor) line.appendChild(el("span","fact-who", c.instructor));
     }
     box.appendChild(line);

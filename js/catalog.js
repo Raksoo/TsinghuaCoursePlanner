@@ -40,6 +40,7 @@ let catalogLoading = null;                // the in-flight load, so callers can 
 
 function ensureCatalog(force){
   if(catalogStatus === "loading") return catalogLoading || Promise.resolve();
+  if(catalogStatus === "error") force = true;          // a failed load is worth retrying
   if(catalogStatus !== "idle" && !force) return Promise.resolve();
   catalogStatus = "loading";
   renderCatalog();
@@ -56,7 +57,10 @@ function ensureCatalog(force){
       CATALOG.deptCodes = new Map(((depts && depts.departments) || []).map(d=>[d.name, d.code]));
       catalogStatus = "ok";
     })
-    .catch(()=>{ catalogStatus = "error"; })
+    // "error" is not final: campus wifi drops a fetch now and then, and a
+    // sticky error would keep the catalog empty for the rest of the session
+    // -- which also silences the course details of a later import.
+    .catch(()=>{ catalogStatus = "error"; CATALOG = null; })
     .then(()=>{ fillCatalogDeptSelect(); renderCatalog(); catalogLoading = null; });
   return catalogLoading;
 }
@@ -231,16 +235,7 @@ function taughtInEnglish(entry){
 }
 
 function weeksRangeText(weeks){ return "weeks "+(weeks||"—"); }
-/* [1,2,3,5,6] -> "1–3, 5–6" */
-function compressWeeks(list){
-  const out = []; let i = 0;
-  while(i < list.length){
-    let j = i; while(j+1 < list.length && list[j+1]===list[j]+1) j++;
-    out.push(i===j ? String(list[i]) : list[i]+"–"+list[j]);
-    i = j+1;
-  }
-  return out.join(", ");
-}
+/* compressWeeks() and weeksLabel() live in core.js — the week view needs them too. */
 
 const catalogSort = { key:null, dir:1 };
 let catalogOpenKey = null;          // key of the one expanded row (only one at a time)
@@ -412,7 +407,7 @@ function renderCatalogRow(entry){
   const flags = el("span","cat-flags");
   if(clashes.length){
     const f = el("span","cat-flag clash", "⚠ clash");
-    f.title = "Clashes with "+clashes.map(x=>(x.course.titleEn||x.course.titleCn)+" (week"+(x.weeks.length>1?"s ":" ")+compressWeeks(x.weeks)+")").join("; ");
+    f.title = "Clashes with "+clashes.map(x=>(x.course.titleEn||x.course.titleCn)+" ("+weeksLabel(x.weeks)+")").join("; ");
     flags.appendChild(f);
   }
   if(entry.remarks){

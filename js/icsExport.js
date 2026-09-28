@@ -22,7 +22,9 @@ function icsEscape(s){
     .replace(/\\/g,"\\\\")
     .replace(/;/g,"\\;")
     .replace(/,/g,"\\,")
-    .replace(/\n/g,"\\n");
+    // A note pasted from the portal can carry CRLF; a bare CR inside a
+    // content line is not valid ICS and some parsers stop reading there.
+    .replace(/\r\n|\r|\n/g,"\\n");
 }
 
 /* UTC Date for a Beijing-local "YYYY-MM-DD" + "HH:MM". */
@@ -40,15 +42,22 @@ function fmtICSDate(d){
     + pad2(d.getUTCMonth()+1) + pad2(d.getUTCDate()) + "T"
     + pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + "00Z";
 }
+/* UTF-8 length of one character — Chinese titles and rooms are three bytes
+   each, so counting characters would fold far too late. */
+function icsOctets(ch){
+  const cp = ch.codePointAt(0);
+  return cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+}
 function foldICSLine(line){
-  // RFC5545 line folding at 75 octets, continuation lines start with a space.
-  if(line.length <= 75) return line;
-  let out = line.slice(0,75), rest = line.slice(75);
-  while(rest.length){
-    out += "\r\n " + rest.slice(0,74);
-    rest = rest.slice(74);
+  // RFC5545 line folding at 75 octets, continuation lines start with a space
+  // (which counts towards the 75, hence the smaller budget after the first).
+  let out = "", cur = "", used = 0, budget = 75;
+  for(const ch of line){                 // iterates by code point, never splits a pair
+    const n = icsOctets(ch);
+    if(used + n > budget){ out += cur + "\r\n "; cur = ""; used = 0; budget = 74; }
+    cur += ch; used += n;
   }
-  return out;
+  return out + cur;
 }
 
 /* One row per meeting that will be written (or skipped, with the reason),

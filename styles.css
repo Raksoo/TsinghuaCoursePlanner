@@ -189,7 +189,7 @@ textarea{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Men
    the border-left against its border-radius on hover) so the left border
    stays crisp. */
 .ev:hover{box-shadow:0 1px 2px rgba(28,20,36,.07), inset 0 0 0 999px rgba(20,10,25,.05)}
-.ev .t{font-weight:640;display:block;margin-bottom:2px}
+.ev .t{font-weight:640;margin-bottom:2px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 .ev .m{color:inherit;opacity:.78;font-size:11.5px;display:block}
 .ev .m.wk{opacity:1;font-weight:600;margin-top:1px}
 /* ---------- Catalog tab (catalog.js) ---------- */

@@ -275,3 +275,75 @@ function cellPage(cells){
     <tr class="biaoti"><td></td><td>Monday</td><td>Tuesday</td><td>Wednesday</td><td>Thursday</td><td>Friday</td><td>Saturday</td><td>Sunday</td></tr>
     <tr>${cells}</tr></tbody></table></body></html>`;
 }
+
+/* A meeting's own `weeks` beats the course's (CLAUDE.md, "Per-slot weeks").
+   A plan course that came from a pasted portal row therefore often carries
+   per-slot ranges — and taking the portal's corrected weeks has to reach
+   them, or the change is applied to the field nothing reads. */
+test("taking the weeks change also corrects the per-slot weeks", () => {
+  const mine = [{
+    id:"seed-digital", titleEn:"Digital Economy", number:"70511131", seq:"1", credits:1,
+    status:"booked", weeks:"1-16", room:"建华/经管新楼A201",
+    slots:[{ day:1, start:"08:00", end:"11:25", block:1, weeks:"9-16" }]
+  }];
+  const d = ctx.diffPlan(mine, ctx.scheduleToCourses(REAL, null));
+  const change = d.changed.find(c => c.key === "70511131-1");
+  assert.ok(change && change.fields.some(f => f.field === "weeks"), "the preview offers a weeks change");
+
+  const next = plain(ctx.applyScheduleDiff(mine, d, {
+    added:{}, changed:{ "70511131-1": { weeks: true } }, missing:{},
+  }));
+  const slot = next[0].slots[0];
+  const effective = plain(ctx.slotWeeks(next[0], slot));
+  assert.deepEqual(effective, plain(ctx.parseWeeks(next[0].weeks)),
+    "the meeting runs in the weeks the preview said it would");
+});
+
+/* Odd/even-week courses write their range as "1-16 (odd weeks)" in Chinese,
+   and weeksToAppNotation() cannot turn that into a week list. An empty
+   `weeks` makes parseWeeks() return [], and a course with no weeks appears
+   in no grid, no clash check and no .ics — it would be silently missing
+   from the plan the student trusts. */
+test("a week range the parser cannot read falls back to the full semester", () => {
+  const meetings = [{
+    day: 3, start: "19:20", end: "21:45", block: 6, number: "70511131", seq: "1",
+    titleEn: "Digital Economy", room: "建华/经管新楼A201",
+    weeksRaw: "1-16单周", weeks: ""
+  }];
+  const [course] = plain(ctx.scheduleToCourses(meetings, null));
+  assert.ok(plain(ctx.parseWeeks(course.weeks)).length > 0, "the course happens in at least one week");
+  assert.ok(/1-16单周/.test(course.note), "the portal's own wording is kept so it can be checked");
+});
+
+/* Credits decide the header counter and the goal bar, and the plan's own
+   number is often a guess (the exchange list and the syllabus disagree for
+   at least one seed course). When the catalog knows better, the import has
+   to offer that — silently keeping a wrong credit total is the one thing
+   the goal bar cannot survive. */
+test("a different credit value is offered as a change", () => {
+  const mine = [{ id:"seed-digital", titleEn:"Digital Economy", number:"70511131", seq:"1",
+                  credits:1, status:"booked", weeks:"1-3,5", room:"建华/经管新楼A201",
+                  slots:[{ day:1, start:"08:00", end:"11:25" }] }];
+  const d = ctx.diffPlan(mine, ctx.scheduleToCourses(REAL, CATALOG));
+  const change = d.changed.find(c => c.key === "70511131-1");
+  const cp = change && change.fields.find(f => f.field === "credits");
+  assert.ok(cp, "the preview offers the credit change");
+  assert.equal(cp.portal, "2");
+
+  const next = plain(ctx.applyScheduleDiff(mine, d, {
+    added:{}, changed:{ "70511131-1": { credits: true } }, missing:{},
+  }));
+  assert.equal(next[0].credits, 2);
+});
+
+/* …but a timetable read without a catalog knows no credits at all, and
+   "2 CP → 0 CP" would be a lie dressed up as a correction. */
+test("an import that knows no credits does not offer to zero them", () => {
+  const mine = [{ id:"seed-digital", titleEn:"Digital Economy", number:"70511131", seq:"1",
+                  credits:2, status:"booked", weeks:"1-3,5", room:"建华/经管新楼A201",
+                  slots:[{ day:1, start:"08:00", end:"11:25" }] }];
+  const d = ctx.diffPlan(mine, ctx.scheduleToCourses(REAL, null));
+  const change = d.changed.find(c => c.key === "70511131-1");
+  assert.ok(!(change && change.fields.some(f => f.field === "credits")),
+    "no credit line when the portal side has none");
+});

@@ -44,7 +44,11 @@ function scheduleToCourses(meetings, catalog){
       credits: 0,
       instructor: "", dept: "", lang: "",
       room: rooms.length === 1 ? rooms[0] : "",
-      weeks: union || first.weeks || "",
+      // A course with no weeks is in no grid, no clash check and no .ics.
+      // The portal writes odd/even-week ranges in Chinese ("1-16 dan zhou"),
+      // which weeksToAppNotation() cannot convert - better the whole
+      // semester and a note to check than a course that silently vanishes.
+      weeks: union || first.weeks || ("1-" + TOTAL_WEEKS),
       status: "booked",                     // it is in the timetable: it is registered
       slots: group.map(m=>{
         const slot = { day: m.day, start: m.start, end: m.end };
@@ -56,7 +60,11 @@ function scheduleToCourses(meetings, catalog){
       note: "",
       catalogRef: { source:"schedule", key: key }
     };
-    if(group.some(m=>m.merged)) course.note = "Portal lists this over two blocks - check the end time.";
+    const notes = [];
+    if(group.some(m=>m.merged)) notes.push("Portal lists this over two blocks - check the end time.");
+    const unreadable = [...new Set(group.filter(m=>!m.weeks && m.weeksRaw).map(m=>m.weeksRaw))];
+    if(unreadable.length) notes.push("Portal weeks: " + unreadable.join(", ") + " - set the weeks by hand.");
+    if(notes.length) course.note = notes.join(" ");
 
     const entry = catalogEntryFor(catalog, first.number, first.seq);
     if(entry){
@@ -145,6 +153,11 @@ function changedFields(mine, portal){
   if((mine.room || "") !== (portal.room || "") && portal.room)
     add("room", "Room", mine.room || "", portal.room);
 
+  // Only when the catalog actually supplied one: a timetable read without a
+  // catalog carries no credits, and offering "2 CP -> 0 CP" would be a lie.
+  if(portal.credits && parseFloat(mine.credits || 0) !== parseFloat(portal.credits))
+    add("credits", "Credits", String(mine.credits || 0), String(portal.credits));
+
   if(meetingsText(mine) !== meetingsText(portal))
     add("meetings", "Meetings", meetingsText(mine), meetingsText(portal));
 
@@ -197,10 +210,22 @@ function applyScheduleDiff(courses, diff, sel){
       patch.fields.forEach(f=>{
         if(f === "room"){ copy.room = p.room; }
         else if(f === "meetings"){ copy.slots = p.slots.map(s=>Object.assign({}, s)); }
-        else if(f === "weeks"){ copy.weeks = p.weeks; }
+        else if(f === "weeks"){
+          // A meeting's own `weeks` outranks the course's (CLAUDE.md), so a
+          // stale per-slot range would quietly survive the correction and
+          // keep the meeting where the portal says it no longer is. Only
+          // the slots this apply does not replace need cleaning.
+          copy.weeks = p.weeks;
+          if(!patch.fields.includes("meetings"))
+            copy.slots = (copy.slots || []).map(s=>{
+              if(!s.weeks) return s;
+              const clean = Object.assign({}, s); delete clean.weeks; return clean;
+            });
+        }
         else if(f === "status"){ copy.status = "booked"; }
         else if(f === "detail"){ copy.detail = p.detail; }
         else if(f === "seq"){ copy.seq = p.seq; }
+        else if(f === "credits"){ copy.credits = p.credits; }
       });
     }
     if(downgrade) copy.status = "option";

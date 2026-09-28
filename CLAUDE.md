@@ -190,9 +190,18 @@ js/
 
 Load order (plain scripts): `core` → `store` → `history` → `calendar` →
 `parser` → `weekView` → `summary` → `courseList` → `archive` → `form` →
-`scheduleParse` → `scheduleImport` → `catalog` → `portalImport` →
+`scheduleParse` → `catalog` → `scheduleImport` → `portalImport` →
 `importPreview` → `xlsImport` → `icsExport` → `printView` → `dataShare` →
 `main`.
+
+**Never do date arithmetic in milliseconds.** `dateFor()` builds dates with
+`new Date(y, m, d + n)`. Adding `n * 86400000` to a local midnight breaks the
+moment the *browser's* clock changes — European summer time ends Sun Oct 25
+2026, in semester week 6, and every week from 7 onwards then lands a day
+early in labels, print, holidays and the `.ics`. It never shows up on a
+machine set to Beijing time (no DST), which is exactly why it survived so
+long. `tests/timezone.test.mjs` runs under `TZ=Europe/Berlin`; the suite is
+also green under `America/New_York`.
 
 **Per-slot weeks:** never call `parseWeeks(c.weeks)` to decide when a
 meeting happens — use `slotWeeks(c, slot)` / `courseEvents(c)[i].weeks`.
@@ -325,8 +334,9 @@ git add -A && git commit -m "…" && git push   # deploys via GitHub Pages in < 
 
 Code pushes never touch users' stored plans — only the app code updates.
 
-`npm test` runs the unit suite (75 tests: schedule parser, course-detail parser,
-snapshot store, catalog merge, plan reconciliation, .ics LOCATION, storage
-compatibility). Beyond that, testing is still ad hoc: drive the
+`npm test` runs the unit suite (124 tests: schedule parser, course-detail parser,
+snapshot store, catalog merge, plan reconciliation, .ics format and folding,
+timezone safety, week display, paste parser, export/import round-trip,
+storage compatibility). Beyond that, testing is still ad hoc: drive the
 live/local page with the Claude browser tools (DOM state, `buildICS()` via
 page.evaluate, PDF render for print). A Playwright E2E suite is PLANNING.md §9.3.

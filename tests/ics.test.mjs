@@ -60,3 +60,53 @@ test("a slot without its own room falls back to the course's", () => {
   const ics = icsFor(ctx, ["c2"]);
   assert.match(ics, /LOCATION:Rm\. A201\\, Jianhua Bldg\./, "and commas stay escaped");
 });
+
+/* RFC 5545 folds at 75 *octets*, not characters. Rooms and Chinese titles
+   from the portal are three bytes per character, so a line that looks short
+   in the editor is three times as long on the wire. Calendars that enforce
+   the limit truncate what they cannot parse — the room is the first thing
+   to go. */
+test("long lines are folded by byte length, not character count", () => {
+  const ctx = loadIcs([{
+    id: "cn1", titleEn: "Civil Engineering and Disaster Prevention and Mitigation",
+    titleCn: "土木工程与防灾减灾", number: "70511131", seq: "1", credits: 2,
+    status: "booked", instructor: "CHEN Yubo", dept: "经济管理学院",
+    room: "舜德楼西楼第三阶梯教室 301", weeks: "1",
+    note: "Group project, presentation in week 12; bring a laptop",
+    slots: [{ day: 1, start: "08:00", end: "09:35", block: 1 }]
+  }]);
+  const text = String(vm.runInContext(
+    "buildICS({ courseIds: new Set(['cn1']), weekFrom:1, weekTo:1, skipHolidays:false," +
+    " seq:1, travelMin:0, alarmMin:0, includeChinese:true, inclNote:true," +
+    " inclInstructor:true, inclDept:true, inclNumber:true }).text", ctx) || "");
+
+  const lines = text.split("\r\n");
+  const tooLong = lines.filter(l => Buffer.byteLength(l, "utf8") > 75);
+  assert.deepEqual(tooLong, [], "every folded line stays within 75 octets");
+
+  // Folding must be reversible: unfolding restores the values unchanged.
+  const unfolded = text.replace(/\r\n /g, "").split("\r\n");
+  assert.ok(unfolded.some(l => l === "LOCATION:舜德楼西楼第三阶梯教室 301"),
+    "the room survives folding and unfolding");
+  assert.ok(unfolded.some(l => l.includes("经济管理学院") && l.includes("bring a laptop")),
+    "the description survives folding and unfolding");
+});
+
+/* Notes travel in from the portal and from pasted rows, where line breaks
+   are CRLF. A bare CR left inside a content line is not valid ICS. */
+test("a note with Windows line breaks does not put a bare CR in the file", () => {
+  const ctx = loadIcs([{
+    id: "n1", titleEn: "Firm Valuation", number: "80517022", seq: "1", credits: 2,
+    status: "booked", weeks: "1", room: "A101",
+    note: "Priority: GMBA first.\r\nBring the case pack.",
+    slots: [{ day: 1, start: "08:00", end: "09:35", block: 1 }]
+  }]);
+  const text = String(vm.runInContext(
+    "buildICS({ courseIds: new Set(['n1']), weekFrom:1, weekTo:1, skipHolidays:false," +
+    " seq:1, travelMin:0, alarmMin:0, inclNote:true }).text", ctx) || "");
+
+  const stray = text.split("\r\n").filter(l => /\r/.test(l));
+  assert.deepEqual(stray, [], "no content line carries a stray CR");
+  assert.ok(text.replace(/\r\n /g, "").includes("GMBA first.\\nBring the case pack."),
+    "the break is escaped as \\n, the way ICS spells it");
+});

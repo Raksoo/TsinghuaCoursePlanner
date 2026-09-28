@@ -28,14 +28,36 @@ function applyPlan(plan){
 /* Replace the plan. `next` holds the new courses and/or overrides (whatever
    is omitted stays as it is). opts.render=false skips the re-render — used
    during start-up, before the page has been drawn once. */
+/* Settings (credit goal, status filters) are view state and change without
+   a commit — undoing an ordinary course change must not drag them back. So
+   an entry only remembers a setting when the commit itself changed it;
+   "Reset everything" does, which is why its Undo has to restore it. */
+function settingsEntry(next){
+  const keep = {};
+  if(next.goal !== undefined) keep.goal = state.goal;
+  if(next.visible !== undefined) keep.visible = JSON.parse(JSON.stringify(state.visible));
+  return keep;
+}
+function applySettings(entry){
+  const back = {};
+  if(entry.goal !== undefined){ back.goal = state.goal; state.goal = entry.goal; }
+  if(entry.visible !== undefined){
+    back.visible = JSON.parse(JSON.stringify(state.visible));
+    state.visible = entry.visible;
+  }
+  return back;
+}
+
 function commit(label, next, opts){
-  history_.undo.push({ label, plan: clonePlan() });
+  history_.undo.push(Object.assign({ label, plan: clonePlan() }, settingsEntry(next)));
   if(history_.undo.length > HISTORY_MAX) history_.undo.shift();
   history_.redo.length = 0;
   applyPlan({
     courses: next.courses !== undefined ? next.courses : state.courses,
     overrides: next.overrides !== undefined ? next.overrides : state.overrides
   });
+  if(next.goal !== undefined) state.goal = next.goal;
+  if(next.visible !== undefined) state.visible = next.visible;
   save();
   if(!opts || opts.render !== false) renderAll();
 }
@@ -43,7 +65,8 @@ function commit(label, next, opts){
 function undo(){
   const entry = history_.undo.pop();
   if(!entry) return false;
-  history_.redo.push({ label: entry.label, plan: clonePlan() });
+  const back = { label: entry.label, plan: clonePlan() };
+  history_.redo.push(Object.assign(back, applySettings(entry)));
   applyPlan(entry.plan);
   save(); renderAll();
   toast("Undone: "+entry.label);
@@ -52,7 +75,8 @@ function undo(){
 function redo(){
   const entry = history_.redo.pop();
   if(!entry) return false;
-  history_.undo.push({ label: entry.label, plan: clonePlan() });
+  const back = { label: entry.label, plan: clonePlan() };
+  history_.undo.push(Object.assign(back, applySettings(entry)));
   applyPlan(entry.plan);
   save(); renderAll();
   toast("Redone: "+entry.label);

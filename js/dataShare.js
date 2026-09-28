@@ -83,7 +83,13 @@ function importJSONFile(file){
       const list = Array.isArray(p) ? p : p.courses;
       if(!Array.isArray(list)) throw new Error("no course array");
       if(confirm("Importing replaces your current list ("+state.courses.length+" courses). Continue?")){
-        if(p.visible) state.visible = Object.assign(state.visible, p.visible);
+        // The export is a backup, so everything it carries comes back — the
+        // share link already restores the goal, and a lost credit goal or
+        // export counter is only noticed much later (the next .ics would
+        // start at SEQUENCE 0 again and calendars ignore the update).
+        if(p.visible) state.visible = Object.assign({}, state.visible, p.visible);
+        if(p.goal != null) state.goal = parseFloat(p.goal) || 0;
+        if(p.icsSeq != null) state.icsSeq = parseInt(p.icsSeq, 10) || 0;
         const overrides = (p.overrides && typeof p.overrides==="object" && !Array.isArray(p.overrides)) ? p.overrides : {};
         commit("Import "+list.length+" courses from file", {
           courses: list.map(c=>Object.assign({id:uid(), status:"option", slots:[], weeks:"1-16"}, c)),
@@ -147,10 +153,13 @@ function importFromHash(){
 
 function resetEverything(){
   if(confirm("Reset everything? This clears all your courses and settings in this browser. (Courses can be brought back with Undo.)")){
-    state.goal = 0;
-    state.visible = {booked:true, bid:true, option:true, out:false};
     state.week = currentSemesterWeek().week;
-    commit("Reset everything", { courses: [], overrides: {} });
+    // Goal and filters go through commit(), so the Undo this dialog promises
+    // brings back the settings too, not just the courses.
+    commit("Reset everything", {
+      courses: [], overrides: {},
+      goal: 0, visible: {booked:true, bid:true, option:true, out:false}
+    });
     renderWeekSelect();
     toastUndo("Everything reset");
   }

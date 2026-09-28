@@ -105,6 +105,25 @@ function parseWeeks(str){
   return [...out].sort((a,b)=>a-b);
 }
 
+/* [1,2,3,5,6] -> "1–3, 5–6". Gaps must stay visible: an MBA course that
+   runs "1-3,5" does not meet in the National Day week, and a first–last
+   range would claim it does. */
+function compressWeeks(list){
+  const out = []; let i = 0;
+  while(i < list.length){
+    let j = i; while(j+1 < list.length && list[j+1]===list[j]+1) j++;
+    out.push(i===j ? String(list[i]) : list[i]+"–"+list[j]);
+    i = j+1;
+  }
+  return out.join(", ");
+}
+
+/* The same list with its noun: "week 5", "weeks 1–3, 5". */
+function weeksLabel(list){
+  if(!list || !list.length) return "";
+  return (list.length===1 ? "week " : "weeks ") + compressWeeks(list);
+}
+
 /* Weeks a single meeting runs in: its own range if it has one (portal rows
    like "1-6(week 1-8),2-6(week 9-16)"), else the course's. course.weeks is
    always the union, so list/strip/sort keep using it. */
@@ -115,7 +134,14 @@ function slotWeeks(course, slot){
 /* Calendar date (in the browser's local calendar) for a given semester
    week + weekday. Used for display labels. */
 function dateFor(w, day){
-  return new Date(WEEK1_MONDAY.getTime() + ((w-1)*7 + (day-1))*86400000);
+  // Calendar arithmetic, not milliseconds: the planner is used from Europe
+  // months before the semester, and clocks there go back on Oct 25 2026 —
+  // adding 86 400 000 ms across that hour lands on 23:00 of the day before,
+  // which would move every week from 7 onwards a day early (labels, print,
+  // holidays and the .ics alike). The Date constructor normalises overflow
+  // and keeps local midnight.
+  return new Date(WEEK1_MONDAY.getFullYear(), WEEK1_MONDAY.getMonth(),
+                  WEEK1_MONDAY.getDate() + (w-1)*7 + (day-1));
 }
 function weekDates(w){
   const mon = dateFor(w, 1);
@@ -133,7 +159,10 @@ function dayDate(w, day){
    actually inside the semester date range. */
 function currentSemesterWeek(){
   const now = new Date();
-  const diff = Math.floor((now - WEEK1_MONDAY)/(7*86400000)) + 1;
+  // Whole days between two local midnights — rounded, so the hour a clock
+  // change adds or removes cannot tip "today" into the neighbouring week.
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.floor(Math.round((today - WEEK1_MONDAY)/86400000)/7) + 1;
   return { week: Math.min(Math.max(diff,1), TOTAL_WEEKS), inRange: diff>=1 && diff<=TOTAL_WEEKS, raw: diff };
 }
 
@@ -168,7 +197,14 @@ let storageOK = true;
 function save(){
   if(!storageOK) return;
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
-  catch(e){ storageOK = false; renderStorageNote(); }
+  catch(e){
+    // Safari's private mode refuses to store anything. The note in the Data
+    // tab is no help to someone who is on the Week tab, so say it out loud —
+    // silently not saving is the worst thing this app can do.
+    storageOK = false;
+    try{ renderStorageNote(); }catch(_){}
+    try{ toast("This browser is not saving — export your plan under Data & sharing"); }catch(_){}
+  }
 }
 function load(){
   try{
@@ -177,7 +213,7 @@ function load(){
       const p = JSON.parse(raw);
       if(p && Array.isArray(p.courses)){
         state.courses = p.courses;
-        if(p.visible) state.visible = Object.assign(state.visible, p.visible);
+        if(p.visible) state.visible = Object.assign({}, state.visible, p.visible);
         if(p.week) state.week = p.week;
         if(p.goal) state.goal = parseFloat(p.goal) || 0;
         if(p.overrides && typeof p.overrides === "object" && !Array.isArray(p.overrides)) state.overrides = p.overrides;

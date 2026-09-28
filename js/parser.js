@@ -18,8 +18,40 @@ function slotsFromCode(str){
   }
   const allSame = ranges.every(r=>r===ranges[0]);
   const union = allSame ? (ranges[0]||"") : compressWeekList([...new Set(ranges.flatMap(parseWeeks))].sort((a,b)=>a-b));
-  if(allSame) slots.forEach(s=>{ delete s.weeks; });
-  return {slots, weeks: union};
+  const merged = mergeSlotBlocks(slots);
+  if(allSame) merged.forEach(s=>{ delete s.weeks; });
+  return {slots: merged, weeks: union};
+}
+
+/* The portal writes one code per block, so a morning lecture arrives as
+   "1-1(week …),1-2(week …)". Same day, same weeks, consecutive blocks =
+   one meeting — the same rule mergeBlocks() applies to the timetable, so a
+   pasted row and an imported one produce the same plan. A merged meeting
+   has no single block any more and carries a custom time. */
+function mergeSlotBlocks(slots){
+  const groups = new Map();
+  slots.forEach(s=>{
+    const key = s.day + "|" + s.weeks;
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(s);
+  });
+  const out = [];
+  groups.forEach(list=>{
+    list.sort((a,b)=>a.block - b.block);
+    let run = [list[0]];
+    const flush = ()=>{
+      const first = run[0], last = run[run.length-1];
+      out.push(run.length === 1 ? first
+        : { day:first.day, start:first.start, end:last.end, weeks:first.weeks });
+      run = [];
+    };
+    for(let i=1;i<list.length;i++){
+      if(list[i].block === run[run.length-1].block + 1) run.push(list[i]);
+      else { flush(); run = [list[i]]; }
+    }
+    flush();
+  });
+  return out.sort((a,b)=>a.day - b.day || toMin(a.start) - toMin(b.start));
 }
 /* [1,2,3,5] → "1-3,5" (the app's own weeks notation) */
 function compressWeekList(list){
@@ -43,6 +75,10 @@ function parseRecord(fields){
   const nums = rest.filter(f=>/^\d+(\.\d+)?$/.test(f));
   const longNum = rest.find(f=>/^\d{6,}(-\d+)?$/.test(f)) || "";
   const shorts = nums.filter(f=>f!==longNum && f.length<3);
+  // A sequence number is always a whole number, so a decimal can only be
+  // the credit value ("1.5") - without this it is dropped and the sequence
+  // is counted as credits instead.
+  const decimal = nums.find(f=>f!==longNum && /\./.test(f)) || "";
 
   const deptRe = /School|Department|Centre|Center|College|Institute|Academy|学院|学系|中心|大学/i;
   const cjk = rest.filter(f=>CJK.test(f) && f!==longNum);
@@ -73,7 +109,7 @@ function parseRecord(fields){
     titleEn, titleCn,
     number: longNum.split("-")[0] || "",
     seq: (longNum.split("-")[1] || shorts[0] || ""),
-    credits: parseFloat(shorts.length>1 ? shorts[1] : (shorts[0]||0)) || 0,
+    credits: parseFloat(decimal || (shorts.length>1 ? shorts[1] : (shorts[0]||0))) || 0,
     instructor, dept, lang: langLine, room:"",
     weeks: weeks || "1-16",
     slots: slots.length ? slots : [],
